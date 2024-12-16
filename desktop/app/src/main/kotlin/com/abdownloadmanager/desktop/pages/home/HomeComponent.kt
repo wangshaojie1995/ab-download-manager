@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.abdownloadmanager.desktop.pages.category.CategoryDialogManager
 import com.abdownloadmanager.desktop.storage.AppSettingsStorage
 import com.abdownloadmanager.resources.Res
-import com.abdownloadmanager.resources.*
+import com.abdownloadmanager.utils.DownloadSystem
 import com.abdownloadmanager.utils.FileIconProvider
 import com.abdownloadmanager.utils.category.Category
 import com.abdownloadmanager.utils.category.CategoryItemWithId
@@ -39,6 +39,8 @@ import ir.amirab.util.flow.combineStateFlows
 import ir.amirab.util.flow.mapStateFlow
 import ir.amirab.util.flow.mapTwoWayStateFlow
 import com.abdownloadmanager.utils.extractors.linkextractor.DownloadCredentialFromStringExtractor
+import ir.amirab.downloader.downloaditem.contexts.RemovedBy
+import ir.amirab.downloader.downloaditem.contexts.User
 import ir.amirab.util.compose.asStringSource
 import ir.amirab.util.compose.asStringSourceWithARgs
 import ir.amirab.util.osfileutil.FileUtils
@@ -61,6 +63,8 @@ sealed interface HomeEffects {
 
     data class DeleteItems(
         val list: List<Long>,
+        val finishedCount: Int,
+        val unfinishedCount: Int,
     ) : HomeEffects
 
     data class DeleteCategory(
@@ -460,7 +464,27 @@ class HomeComponent(
     private fun requestDelete(
         downloadList: List<Long>,
     ) {
-        sendEffect(HomeEffects.DeleteItems(downloadList))
+        if (downloadList.isEmpty()) {
+            // nothing to delete!
+            return
+        }
+        scope.launch {
+            val unfinished = downloadSystem.getUnfinishedDownloadIds()
+                .count {
+                    it in downloadList
+                }
+            val finished = downloadSystem.getFinishedDownloadIds()
+                .count {
+                    it in downloadList
+                }
+            sendEffect(
+                HomeEffects.DeleteItems(
+                    list = downloadList,
+                    unfinishedCount = unfinished,
+                    finishedCount = finished,
+                )
+            )
+        }
     }
 
     fun onConfirmDeleteCategory(promptState: CategoryDeletePromptState) {
@@ -473,7 +497,11 @@ class HomeComponent(
         scope.launch {
             val selectionList = promptState.downloadList
             for (id in selectionList) {
-                downloadSystem.removeDownload(id, promptState.alsoDeleteFile)
+                downloadSystem.removeDownload(
+                    id = id,
+                    alsoRemoveFile = promptState.alsoDeleteFile,
+                    context = RemovedBy(User),
+                )
             }
         }
     }
@@ -536,6 +564,9 @@ class HomeComponent(
                 title = Res.string.delete.asStringSource(),
                 icon = MyIcons.remove
             ) {
+                item(Res.string.all_missing_files.asStringSource()) {
+                    requestDelete(downloadSystem.getListOfDownloadThatMissingFileOrHaveNotProgress().map { it.id })
+                }
                 item(Res.string.all_finished.asStringSource()) {
                     requestDelete(downloadSystem.getFinishedDownloadIds())
                 }
@@ -606,7 +637,6 @@ class HomeComponent(
             DownloadListCells.DateAdded,
         ),
         forceVisibleCells = listOf(
-            DownloadListCells.Check,
             DownloadListCells.Name,
         ),
         initialSortBy = Sort(DownloadListCells.DateAdded, true)
