@@ -1,38 +1,71 @@
 package com.abdownloadmanager.desktop.pages.settings
 
 import com.abdownloadmanager.desktop.window.custom.CustomWindow
-import com.abdownloadmanager.shared.utils.mvi.HandleEffects
+import com.abdownloadmanager.shared.util.mvi.HandleEffects
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.WindowPlacement
-import androidx.compose.ui.window.WindowPosition
-import androidx.compose.ui.window.rememberWindowState
+import androidx.compose.ui.window.v2.WindowBoundsProvider
+import androidx.compose.ui.window.v2.WindowPositionProvider
+import androidx.compose.ui.window.v2.WindowSizeProvider
+import androidx.compose.ui.window.v2.rememberWindowState
+import com.abdownloadmanager.desktop.AppComponent
+import com.abdownloadmanager.desktop.window.custom.isMinimizedOrNull
+import com.abdownloadmanager.desktop.window.custom.placementOrNull
+import com.abdownloadmanager.desktop.window.custom.sizeOrNull
+import com.abdownloadmanager.desktop.window.custom.rememberWindowController
+import com.abdownloadmanager.shared.settings.BaseSettingsComponent
+import com.abdownloadmanager.shared.util.rememberChild
+import com.abdownloadmanager.resources.Res
+import ir.amirab.util.compose.resources.myStringResource
 
 @Composable
 fun SettingWindow(
-    settingsComponent: SettingsComponent,
+    appComponent: AppComponent,
+) {
+    appComponent.showSettingSlot.rememberChild()?.let {
+        SettingWindow(it, appComponent::closeSettings)
+    }
+}
+
+@Composable
+private fun SettingWindow(
+    settingsComponent: DesktopSettingsComponent,
     onRequestCloseWindow: () -> Unit,
 ) {
     val windowState = rememberWindowState(
-        size = settingsComponent.windowSize.value,
-        position = WindowPosition.Aligned(Alignment.Center),
+        initialBoundsProvider = WindowBoundsProvider(
+            sizeProvider = WindowSizeProvider.Fixed(
+                size = settingsComponent.windowSize.value,
+            ),
+            positionProvider = WindowPositionProvider.CenteredOnScreen
+        )
     )
-    LaunchedEffect(windowState.size) {
-        if (!windowState.isMinimized && windowState.placement == WindowPlacement.Floating) {
-            settingsComponent.setWindowSize(windowState.size)
+    LaunchedEffect(windowState.sizeOrNull) {
+        if (windowState.isMinimizedOrNull == false && windowState.placementOrNull == WindowPlacement.Floating) {
+            windowState.sizeOrNull?.let {
+                settingsComponent.setWindowSize(it)
+            }
         }
     }
-    CustomWindow(windowState, {
-        onRequestCloseWindow()
-    }) {
+    CustomWindow(
+        state = windowState,
+        onCloseRequest = {
+            onRequestCloseWindow()
+        },
+        windowController = rememberWindowController(
+            title = myStringResource(Res.string.settings),
+        ),
+    ) {
         HandleEffects(settingsComponent) {
             when (it) {
-                SettingPageEffects.BringToFront -> {
-                    windowState.isMinimized = false
-                    window.toFront()
+                is BaseSettingsComponent.Effects.Platform -> {
+                    when (it as DesktopSettingsComponent.Effects) {
+                        DesktopSettingsComponent.Effects.BringToFront -> {
+                            windowState.requestMinimized(false)
+                            window.toFront()
+                        }
+                    }
                 }
             }
         }

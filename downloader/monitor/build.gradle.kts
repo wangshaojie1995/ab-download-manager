@@ -1,11 +1,24 @@
 plugins {
-    id(MyPlugins.kotlin)
+    id(MyPlugins.kotlinMultiplatform)
     id(Plugins.Kotlin.serialization)
-    id(MyPlugins.composeDesktop)
+    id(MyPlugins.composeBase)
+    id(Plugins.Android.multiplatformLibrary)
 }
-dependencies {
-    implementation(project(":downloader:core"))
-    implementation(project(":shared:utils"))
-    implementation(libs.kotlin.coroutines.core)
-    implementation(compose.runtime)
+kotlin {
+    jvm("desktop")
+    android {
+        compileSdk = libs.versions.androidCompileSdk.get().toInt()
+        namespace = "ir.amirab.downloader.monitor"
+        minSdk = 26
+    }
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation(project(":downloader:core"))
+                implementation(project(":shared:utils"))
+                implementation(libs.kotlin.coroutines.core)
+                implementation(libs.compose.runtime)
+            }
+        }
+    }
 }

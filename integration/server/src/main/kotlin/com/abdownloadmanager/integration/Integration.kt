@@ -1,32 +1,12 @@
 package com.abdownloadmanager.integration
 
-import com.abdownloadmanager.integration.http4k.MyHttp4KServer
+import io.ktor.server.cio.*
+import io.ktor.server.engine.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.builtins.ListSerializer
 
-//val scope = CoroutineScope(SupervisorJob())
-
-/*
-fun main() {
-    runBlocking {
-        val integration = Integration(
-            object : ir.amirab.abdownloadmanager.integration.IntegrationHandler {
-                override suspend fun addDownload(list: List<NewDownloadInfo>){
-                    return
-                }
-            },
-            this,
-        )
-//    integration.createServer(8000)
-//        .start(true)
-        integration.boot()
-        integration.enable(8000)
-        delay(100)
-    }
-}
-*/
 sealed interface IntegrationResult {
     data object Inactive : IntegrationResult
     data class Fail(val throwable: Throwable) : IntegrationResult
@@ -36,14 +16,15 @@ sealed interface IntegrationResult {
 class Integration(
     val integrationHandler: IntegrationHandler,
     val scope: CoroutineScope,
+    private val json: Json,
     val debugMode: Boolean,
 ) {
 
-    private val portFlow = MutableStateFlow<Int?>(null)
+    private val portFlow = MutableStateFlow<IntegrationSettings?>(null)
     val integrationStatus = MutableStateFlow<IntegrationResult>(IntegrationResult.Inactive)
 
-    fun enable(port: Int) {
-        portFlow.update { port }
+    fun enable(settings: IntegrationSettings) {
+        portFlow.update { settings }
     }
 
     fun disable() {
@@ -53,11 +34,11 @@ class Integration(
     fun boot() {
         scope.launch {
             kotlin.runCatching {
-                portFlow.collect { port ->
+                portFlow.collect { settings ->
                     runCatching {
-                        if (port != null) {
-                            startServer(port)
-                            integrationStatus.update { IntegrationResult.Success(port) }
+                        if (settings != null) {
+                            startServer(settings)
+                            integrationStatus.update { IntegrationResult.Success(settings.port) }
                         } else {
                             stopServer()
                             integrationStatus.update { IntegrationResult.Inactive }
@@ -77,9 +58,9 @@ class Integration(
 
     @Volatile
     private var server: MyServer? = null
-    private suspend fun startServer(port: Int) {
+    private suspend fun startServer(settings: IntegrationSettings) {
         stopServer()
-        val server = createServer(port)
+        val server = createServer(settings)
         this.server = server
         withContext(Dispatchers.IO) {
 //            println("start server")
@@ -97,46 +78,15 @@ class Integration(
         server = null
     }
 
-    private val customJson = Json {
-        ignoreUnknownKeys = true
-        encodeDefaults = true
-    }
 
-    private fun createServer(port: Int): MyServer {
-        val handlers = HandlerMap().apply {
-            post("/add") {
-                runBlocking {
-                    val itemsToAdd = kotlin.runCatching {
-                        val message = it.getBody().orEmpty()
-                        customJson.decodeFromString<List<NewDownloadInfoFromIntegration>>(message)
-                    }
-                    itemsToAdd.onFailure { it.printStackTrace() }
-                    integrationHandler.addDownload(itemsToAdd.getOrThrow())
-                }
-                MyResponse.Text("OK")
-            }
-            get("/queues") {
-                runBlocking {
-                    val queues = integrationHandler.listQueues()
-                    val jsonResponse = customJson.encodeToString(ListSerializer(ApiQueueModel.serializer()), queues)
-                    MyResponse.Text(jsonResponse)
-                }
-            }
-            post("/start-headless-download") {
-                runBlocking {
-                    val itemsToAdd = kotlin.runCatching {
-                        val message = it.getBody().orEmpty()
-                        customJson.decodeFromString<NewDownloadTask>(message)
-                    }
-                    itemsToAdd.onFailure { it.printStackTrace() }
-                    integrationHandler.addDownloadTask(itemsToAdd.getOrThrow())
-                }
-                MyResponse.Text("OK")
-            }
-            post("/ping") {
-                MyResponse.Text("pong")
-            }
+    private fun createServer(settings: IntegrationSettings): MyServer {
+        val server = embeddedServer(
+            factory = CIO,
+            port = settings.port,
+            host = "127.0.0.1",
+        ) {
+            setupRouting(json, integrationHandler, settings)
         }
-        return MyHttp4KServer(port, handlers, debugMode)
+        return KtorServer(server)
     }
 }

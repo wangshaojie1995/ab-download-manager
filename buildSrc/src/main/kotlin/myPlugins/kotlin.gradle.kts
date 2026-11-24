@@ -9,18 +9,19 @@ repositories {
     maven("https://jitpack.io")
 }
 
-fun getOptIns() = setOf(
-    "com.russhwolf.settings.ExperimentalSettingsApi",
-    "com.arkivanov.decompose.ExperimentalDecomposeApi",
+fun getOptIns(): Set<String> = setOf(
     "androidx.compose.animation.ExperimentalAnimationApi",
     "androidx.compose.foundation.ExperimentalFoundationApi",
     "androidx.compose.ui.ExperimentalComposeUiApi",
 )
-fun getFeatures() = setOf(
-    "context-receivers"
+
+fun getFeatures(): Set<String> = setOf(
 )
 
+val jvmToolchainVersion =  providers.gradleProperty("jvm.toolchain").get().toInt()
+
 kotlin {
+    jvmToolchain(jvmToolchainVersion)
     compilerOptions {
         val optIns = getOptIns().map { "-Xopt-in=$it" }
         val features = getFeatures().map { "-X$it" }

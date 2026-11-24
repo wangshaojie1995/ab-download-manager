@@ -2,29 +2,41 @@ package com.abdownloadmanager.desktop.pages.singleDownloadPage
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.draganddrop.dragAndDropSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draganddrop.DragAndDropTransferAction
+import androidx.compose.ui.draganddrop.DragAndDropTransferData
+import androidx.compose.ui.draganddrop.DragAndDropTransferable
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.abdownloadmanager.shared.utils.ui.icon.MyIcons
-import com.abdownloadmanager.shared.utils.ui.myColors
-import com.abdownloadmanager.shared.utils.ui.theme.myTextSizes
+import com.abdownloadmanager.desktop.pages.home.DownloadItemTransferable
+import com.abdownloadmanager.shared.util.ui.icon.MyIcons
+import com.abdownloadmanager.shared.util.ui.myColors
+import com.abdownloadmanager.shared.util.ui.theme.myTextSizes
 import com.abdownloadmanager.shared.ui.widget.ActionButton
 import com.abdownloadmanager.shared.ui.widget.Text
-import com.abdownloadmanager.shared.utils.LocalSizeUnit
-import com.abdownloadmanager.shared.utils.convertPositiveSizeToHumanReadable
-import com.abdownloadmanager.shared.utils.div
+import com.abdownloadmanager.shared.util.LocalSizeUnit
+import com.abdownloadmanager.shared.util.convertPositiveSizeToHumanReadable
+import com.abdownloadmanager.shared.util.div
 import com.abdownloadmanager.resources.Res
-import com.abdownloadmanager.shared.utils.ui.WithContentColor
-import com.abdownloadmanager.shared.utils.ui.widget.MyIcon
+import com.abdownloadmanager.shared.ui.widget.IconActionButton
+import com.abdownloadmanager.shared.ui.widget.Tooltip
+import com.abdownloadmanager.shared.util.ui.WithContentColor
+import com.abdownloadmanager.shared.util.ui.widget.MyIcon
 import ir.amirab.downloader.monitor.CompletedDownloadItemState
+import ir.amirab.util.compose.asStringSource
 import ir.amirab.util.compose.resources.myStringResource
+import ir.amirab.util.desktop.isShiftPressed
 
 @Composable
 fun CompletedDownloadPage(
-    component: SingleDownloadComponent,
+    component: DesktopSingleDownloadComponent,
     completedDownloadItemState: CompletedDownloadItemState,
 ) {
     Column {
@@ -54,8 +66,9 @@ fun CompletedDownloadPage(
 @Composable
 private fun Actions(
     modifier: Modifier,
-    component: SingleDownloadComponent,
+    component: DesktopSingleDownloadComponent,
 ) {
+    val iDownloadItemState by component.itemStateFlow.collectAsState()
     Column(modifier) {
         Spacer(
             Modifier
@@ -69,6 +82,7 @@ private fun Actions(
                 .background(myColors.surface / 0.5f)
                 .padding(horizontal = 16.dp)
                 .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             ActionButton(
                 myStringResource(Res.string.open),
@@ -76,6 +90,9 @@ private fun Actions(
                 onClick = {
                     component.openFile()
                 },
+                onLongClick = {
+                    component.openFile(useChooser = true)
+                }
             )
             Spacer(Modifier.width(8.dp))
             ActionButton(
@@ -85,6 +102,43 @@ private fun Actions(
                     component.openFolder()
                 },
             )
+            Spacer(Modifier.width(8.dp))
+            val dragTheFileDescription = Res.string.drag_the_file_to_another_app.asStringSource()
+            val windowInfo = LocalWindowInfo.current
+            Tooltip(dragTheFileDescription) {
+                IconActionButton(
+                    icon = MyIcons.dragAndDrop,
+                    contentDescription = dragTheFileDescription,
+                    modifier = Modifier
+                        .dragAndDropSource(
+                            drawDragDecoration = {},
+                            transferData = {
+                                val completedDownloadItemState =
+                                    iDownloadItemState as? CompletedDownloadItemState
+                                        ?: return@dragAndDropSource null
+
+                                val shiftPressed = isShiftPressed(windowInfo)
+                                val supportedActions = listOf(
+                                    if (shiftPressed) {
+                                        DragAndDropTransferAction.Move
+                                    } else {
+                                        DragAndDropTransferAction.Copy
+                                    }
+                                )
+                                DragAndDropTransferData(
+                                    transferable = DragAndDropTransferable(
+                                        DownloadItemTransferable(
+                                            listOf(completedDownloadItemState)
+                                        )
+                                    ),
+                                    supportedActions = supportedActions,
+                                )
+                            }
+                        ),
+                    onClick = {},
+                )
+            }
+
             Spacer(Modifier.weight(1f))
             ActionButton(
                 myStringResource(Res.string.close),
@@ -123,9 +177,11 @@ private fun RenderName(
         }
         Spacer(Modifier.height(8.dp))
         Text(
-            name,
+            text = name,
             maxLines = 1,
-            modifier = Modifier.basicMarquee()
+            modifier = Modifier.basicMarquee(
+                iterations = Int.MAX_VALUE
+            )
         )
     }
 }
@@ -133,7 +189,7 @@ private fun RenderName(
 @Composable
 private fun RenderFileIconAndSize(
     modifier: Modifier,
-    component: SingleDownloadComponent,
+    component: DesktopSingleDownloadComponent,
     itemState: CompletedDownloadItemState,
 ) {
     Column(

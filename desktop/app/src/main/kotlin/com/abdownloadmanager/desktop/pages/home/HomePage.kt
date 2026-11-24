@@ -1,62 +1,80 @@
 package com.abdownloadmanager.desktop.pages.home
 
-import com.abdownloadmanager.desktop.pages.home.sections.DownloadList
-import com.abdownloadmanager.desktop.pages.home.sections.SearchBox
-import com.abdownloadmanager.desktop.pages.home.sections.category.*
-import com.abdownloadmanager.shared.utils.ui.WithContentAlpha
-import ir.amirab.util.compose.IconSource
-import com.abdownloadmanager.shared.utils.ui.widget.MyIcon
-import com.abdownloadmanager.shared.utils.ui.icon.MyIcons
-import com.abdownloadmanager.shared.utils.ui.myColors
-import com.abdownloadmanager.shared.utils.ui.theme.myTextSizes
-import com.abdownloadmanager.shared.ui.widget.menu.MenuBar
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import com.abdownloadmanager.shared.ui.widget.Text
-import androidx.compose.runtime.*
-import androidx.compose.ui.*
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.draganddrop.dragAndDropTarget
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draganddrop.DragAndDropEvent
 import androidx.compose.ui.draganddrop.DragAndDropTarget
 import androidx.compose.ui.draganddrop.awtTransferable
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import com.abdownloadmanager.shared.ui.widget.*
-import com.abdownloadmanager.shared.ui.widget.menu.ShowOptionsInDropDown
+import com.abdownloadmanager.desktop.pages.home.sections.DownloadQRWindow
+import com.abdownloadmanager.desktop.pages.home.sections.DownloadList
+import com.abdownloadmanager.desktop.pages.home.sections.SearchBox
+import com.abdownloadmanager.shared.pages.home.category.DefinedStatusCategories
+import com.abdownloadmanager.shared.pages.home.category.DownloadStatusCategoryFilter
+import com.abdownloadmanager.desktop.pages.home.sections.category.StatusFilterItem
+import com.abdownloadmanager.desktop.pages.home.sections.queue.QueuesSection
 import com.abdownloadmanager.desktop.window.custom.TitlePosition
 import com.abdownloadmanager.desktop.window.custom.WindowEnd
 import com.abdownloadmanager.desktop.window.custom.WindowStart
 import com.abdownloadmanager.desktop.window.custom.WindowTitlePosition
 import com.abdownloadmanager.resources.Res
-import com.abdownloadmanager.shared.utils.LocalSpeedUnit
-import com.abdownloadmanager.shared.utils.category.Category
-import com.abdownloadmanager.shared.utils.category.rememberIconPainter
-import com.abdownloadmanager.shared.utils.convertPositiveBytesToSizeUnit
-import com.abdownloadmanager.shared.utils.div
-import com.abdownloadmanager.shared.utils.ui.WithTitleBarDirection
-import ir.amirab.util.compose.resources.myStringResource
-import ir.amirab.util.compose.StringSource
+import com.abdownloadmanager.shared.pages.home.BaseHomeComponent
+import com.abdownloadmanager.shared.pages.home.CategoryActions
+import com.abdownloadmanager.shared.pages.home.CategoryDeletePromptState
+import com.abdownloadmanager.shared.pages.home.ConfirmPromptState
+import com.abdownloadmanager.shared.pages.home.DeletePromptState
+import com.abdownloadmanager.shared.ui.widget.*
+import com.abdownloadmanager.shared.ui.widget.menu.custom.MenuBar
+import com.abdownloadmanager.shared.ui.widget.menu.custom.ShowOptionsInPopup
+import com.abdownloadmanager.shared.ui.widget.menu.native.NativeMenuBar
+import com.abdownloadmanager.shared.util.LocalSizeUnit
+import com.abdownloadmanager.shared.util.LocalSpeedUnit
+import com.abdownloadmanager.shared.util.category.Category
+import com.abdownloadmanager.shared.util.category.rememberIconPainter
+import com.abdownloadmanager.shared.util.convertPositiveBytesToSizeUnit
+import com.abdownloadmanager.shared.util.div
+import com.abdownloadmanager.shared.util.mvi.HandleEffects
+import com.abdownloadmanager.shared.util.ui.WithContentAlpha
+import com.abdownloadmanager.shared.util.ui.WithTitleBarDirection
+import com.abdownloadmanager.shared.util.ui.icon.MyIcons
+import com.abdownloadmanager.shared.util.ui.myColors
+import com.abdownloadmanager.shared.util.ui.theme.myShapes
+import com.abdownloadmanager.shared.util.ui.theme.myTextSizes
+import com.abdownloadmanager.shared.util.ui.widget.MyIcon
+import ir.amirab.util.compose.IconSource
 import ir.amirab.util.compose.action.MenuItem
 import ir.amirab.util.compose.asStringSource
 import ir.amirab.util.compose.asStringSourceWithARgs
 import ir.amirab.util.compose.localizationmanager.WithLanguageDirection
+import ir.amirab.util.compose.resources.myStringResource
+import ir.amirab.util.desktop.LocalFrameWindowScope
+import ir.amirab.util.platform.Platform
+import ir.amirab.util.platform.isMac
+import kotlinx.coroutines.launch
 import java.awt.datatransfer.DataFlavor
 import java.io.File
 
@@ -78,43 +96,75 @@ fun HomePage(component: HomeComponent) {
         mutableStateOf(null as ConfirmPromptState?)
     }
 
-    LaunchedEffect(Unit) {
-        component.effects.onEach {
-            when (it) {
-                is HomeEffects.DeleteItems -> {
-                    if (it.list.isNotEmpty()) {
-                        showDeletePromptState = DeletePromptState(
-                            downloadList = it.list,
-                            finishedCount = it.finishedCount,
-                            unfinishedCount = it.unfinishedCount,
+    val coroutineScope = rememberCoroutineScope()
+    val lazyListState = rememberLazyListState()
+    val tableState = component.tableState
+
+    HandleEffects(component) { effect ->
+        when (effect) {
+            is BaseHomeComponent.Effects.Common -> {
+                when (effect) {
+                    is BaseHomeComponent.Effects.Common.DeleteItems -> {
+                        if (effect.list.isNotEmpty()) {
+                            showDeletePromptState = DeletePromptState(
+                                downloadList = effect.list,
+                                finishedCount = effect.finishedCount,
+                                unfinishedCount = effect.unfinishedCount,
+                            )
+                        }
+                    }
+
+                    is BaseHomeComponent.Effects.Common.DeleteCategory -> {
+                        showDeleteCategoryPromptState = CategoryDeletePromptState(effect.category)
+                    }
+
+                    is BaseHomeComponent.Effects.Common.AutoCategorize -> {
+                        showConfirmPrompt = ConfirmPromptState(
+                            title = Res.string.confirm_auto_categorize_downloads_title.asStringSource(),
+                            description = Res.string.confirm_auto_categorize_downloads_description.asStringSource(),
+                            onConfirm = component::onConfirmAutoCategorize
                         )
                     }
-                }
 
-                is HomeEffects.DeleteCategory -> {
-                    showDeleteCategoryPromptState = CategoryDeletePromptState(it.category)
-                }
+                    is BaseHomeComponent.Effects.Common.ResetCategoriesToDefault -> {
+                        showConfirmPrompt = ConfirmPromptState(
+                            title = Res.string.confirm_reset_to_default_categories_title.asStringSource(),
+                            description = Res.string.confirm_reset_to_default_categories_description.asStringSource(),
+                            onConfirm = component::onConfirmResetCategories
+                        )
+                    }
 
-                is HomeEffects.AutoCategorize -> {
-                    showConfirmPrompt = ConfirmPromptState(
-                        title = Res.string.confirm_auto_categorize_downloads_title.asStringSource(),
-                        description = Res.string.confirm_auto_categorize_downloads_description.asStringSource(),
-                        onConfirm = component::onConfirmAutoCategorize
-                    )
+                    is BaseHomeComponent.Effects.Common.ScrollToDownloadItem -> {
+                        val id = effect.downloadId
+                        val positionOrNull = tableState
+                            .getItemPosition(listState) { it.id == id }
+                            .takeIf { it != -1 }
+                        positionOrNull?.let { index ->
+                            if (effect.skipIfVisible) {
+                                val isVisible = lazyListState.layoutInfo.visibleItemsInfo
+                                    .any { it.index == index }
+                                if (isVisible) {
+                                    return@let
+                                }
+                            }
+                            coroutineScope.launch {
+                                lazyListState.scrollToItem(index)
+                            }
+                        }
+                    }
                 }
-
-                is HomeEffects.ResetCategoriesToDefault -> {
-                    showConfirmPrompt = ConfirmPromptState(
-                        title = Res.string.confirm_reset_to_default_categories_title.asStringSource(),
-                        description = Res.string.confirm_reset_to_default_categories_description.asStringSource(),
-                        onConfirm = component::onConfirmResetCategories
-                    )
-                }
-
-                else -> {}
             }
+
+            is HomeComponent.Effects -> {
+                when (effect) {
+                    HomeComponent.Effects.BringToFront -> {
+                        // handled else where
+                    }
+                }
+            }
+
+            else -> {}
         }
-            .launchIn(this)
     }
     showDeletePromptState?.let {
         ShowDeletePrompts(
@@ -181,23 +231,35 @@ fun HomePage(component: HomeComponent) {
             .fillMaxSize()
             .dragAndDropTarget(
                 shouldStartDragAndDrop = {
-                    it.awtTransferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor) ||
+                    if (it.awtTransferable.isDataFlavorSupported(DownloadItemListDataFlavor)) {
+                        // this item is ours we don't want to use our download item for import list usage
+                        return@dragAndDropTarget false
+                    } else it.awtTransferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor) ||
                             it.awtTransferable.isDataFlavorSupported(DataFlavor.stringFlavor)
                 },
                 target = remember {
                     object : DragAndDropTarget {
-                        override fun onStarted(event: DragAndDropEvent) {
-                            isDragging = true
+                        private fun onDraggedIn(event: DragAndDropEvent) {
                             if (event.awtTransferable.isDataFlavorSupported(DataFlavor.stringFlavor)) {
-                                component.onExternalTextDraggedIn { (event.awtTransferable.getTransferData(DataFlavor.stringFlavor) as String) }
-                                return
-                            }
-                            if (event.awtTransferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
-                                component.onExternalFilesDraggedIn {
-                                    (event.awtTransferable.getTransferData(DataFlavor.javaFileListFlavor) as List<File>)
+                                component.onExternalTextDraggedIn {
+                                    (event.awtTransferable.getTransferData(
+                                        DataFlavor.stringFlavor
+                                    ) as String)
                                 }
                                 return
                             }
+
+                            if (event.awtTransferable.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                                component.onExternalFilesDraggedIn {
+                                    (event.awtTransferable.getTransferData(DataFlavor.javaFileListFlavor) as List<*>).filterIsInstance<File>()
+                                }
+                                return
+                            }
+                        }
+
+                        override fun onStarted(event: DragAndDropEvent) {
+                            isDragging = true
+                            onDraggedIn(event)
                         }
 
                         override fun onEnded(event: DragAndDropEvent) {
@@ -207,6 +269,9 @@ fun HomePage(component: HomeComponent) {
 
                         override fun onDrop(event: DragAndDropEvent): Boolean {
                             isDragging = false
+                            if (Platform.isMac()) {
+                                onDraggedIn(event)
+                            }
                             component.onDropped()
                             return true
                         }
@@ -231,13 +296,24 @@ fun HomePage(component: HomeComponent) {
                     .height(1.dp)
                     .background(myColors.surface)
             )
-            Row() {
+            Row {
                 val categoriesWidth by component.categoriesWidth.collectAsState()
-                Categories(
-                    modifier = Modifier.padding(top = 8.dp)
-                        .width(categoriesWidth),
-                    component = component
-                )
+                Column(
+                    Modifier
+                        .padding(top = 8.dp).width(categoriesWidth)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Categories(
+                        modifier = Modifier.fillMaxWidth(),
+                        component = component,
+                    )
+                    Spacer(Modifier.size(8.dp))
+                    QueuesSection(
+                        modifier = Modifier.fillMaxWidth(),
+                        component = component,
+                    )
+                    Spacer(Modifier.size(8.dp))
+                }
                 Spacer(Modifier.size(8.dp))
                 //split pane
                 Handle(
@@ -252,9 +328,12 @@ fun HomePage(component: HomeComponent) {
                     ) {
                         Spacer(Modifier.size(4.dp))
                         AddUrlButton {
-                            component.requestAddNewDownload()
+                            component.requestEnterNewURL()
                         }
-                        Actions(component.headerActions)
+                        Actions(
+                            component.headerActions,
+                            component.showLabels.collectAsState().value
+                        )
                     }
                     var lastSelected by remember { mutableStateOf(null as Long?) }
                     DownloadList(
@@ -282,9 +361,11 @@ fun HomePage(component: HomeComponent) {
                             component.newSelection(ids = it)
                         },
                         lastSelectedId = lastSelected,
-                        tableState = component.tableState,
+                        tableState = tableState,
                         fileIconProvider = component.fileIconProvider,
                         categoryManager = component.categoryManager,
+                        lazyListState = lazyListState,
+                        failedDownloadReasons = component.failedDownloads.collectAsState().value,
                     )
                     Spacer(
                         Modifier
@@ -300,7 +381,7 @@ fun HomePage(component: HomeComponent) {
         }
         NotificationArea(
             Modifier
-                .width(300.dp)
+                .width(310.dp)
                 .padding(24.dp)
                 .align(Alignment.BottomEnd)
         )
@@ -315,6 +396,13 @@ fun HomePage(component: HomeComponent) {
                 component.currentActiveDrops.value?.size,
             )
         }
+    }
+    val showQRCode by component.copyQRCodeScreen.collectAsState()
+    showQRCode?.let {
+        DownloadQRWindow(
+            data = it,
+            onClose = component::closeQRCodeScreen
+        )
     }
 }
 
@@ -336,7 +424,7 @@ private fun ShowDeletePrompts(
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(6.dp)
+    val shape = myShapes.defaultRounded
     Dialog(onDismissRequest = onCancel) {
         Column(
             Modifier
@@ -395,18 +483,28 @@ private fun ShowDeletePrompts(
             )
             if (deletePromptState.hasFinishedDownloads) {
                 Spacer(Modifier.height(12.dp))
+                val alsoDeleteFileInteractionSource = remember { MutableInteractionSource() }
                 Row(
-                    Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        deletePromptState.alsoDeleteFile = !deletePromptState.alsoDeleteFile
-                    },
+                    Modifier
+                        .clickable(
+                            interactionSource = alsoDeleteFileInteractionSource,
+                            indication = null
+                        ) {
+                            deletePromptState.alsoDeleteFile = !deletePromptState.alsoDeleteFile
+                        },
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    CheckBox(deletePromptState.alsoDeleteFile, {
-                        deletePromptState.alsoDeleteFile = it
-                    })
+                    CheckBox(
+                        value = deletePromptState.alsoDeleteFile,
+                        onValueChange = {
+                            deletePromptState.alsoDeleteFile = it
+                        },
+                        modifier = Modifier
+                            // the Row itself is clickable (focusable) so we don't need to focus this checkbox
+                            // is there a better way?
+                            .focusProperties { canFocus = false },
+                        interactionSource = alsoDeleteFileInteractionSource,
+                    )
                     Spacer(Modifier.width(8.dp))
                     Text(
                         myStringResource(Res.string.also_delete_file_from_disk),
@@ -420,12 +518,17 @@ private fun ShowDeletePrompts(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                val confirmFocusRequester = remember { FocusRequester() }
+                LaunchedEffect(Unit) {
+                    confirmFocusRequester.requestFocus()
+                }
                 Spacer(Modifier.weight(1f))
                 ActionButton(
                     text = myStringResource(Res.string.delete),
                     onClick = onConfirm,
-                    borderColor = SolidColor(myColors.error),
+                    focusedBorderColor = SolidColor(myColors.error),
                     contentColor = myColors.error,
+                    modifier = Modifier.focusRequester(confirmFocusRequester)
                 )
                 Spacer(Modifier.width(8.dp))
                 ActionButton(text = myStringResource(Res.string.cancel), onClick = onCancel)
@@ -440,7 +543,7 @@ private fun ShowConfirmPrompt(
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(6.dp)
+    val shape = myShapes.defaultRounded
     Dialog(onDismissRequest = onCancel) {
         Column(
             Modifier
@@ -475,11 +578,15 @@ private fun ShowConfirmPrompt(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                val confirmFocusRequester = remember { FocusRequester() }
+                LaunchedEffect(Unit) {
+                    confirmFocusRequester.requestFocus()
+                }
                 Spacer(Modifier.weight(1f))
                 ActionButton(
                     text = myStringResource(Res.string.ok),
                     onClick = onConfirm,
-                    contentColor = myColors.error,
+                    modifier = Modifier.focusRequester(confirmFocusRequester)
                 )
                 Spacer(Modifier.width(8.dp))
                 ActionButton(text = myStringResource(Res.string.cancel), onClick = onCancel)
@@ -494,7 +601,7 @@ private fun ShowDeleteCategoryPrompt(
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(6.dp)
+    val shape = myShapes.defaultRounded
     Dialog(onDismissRequest = onCancel) {
         Column(
             Modifier
@@ -545,11 +652,16 @@ private fun ShowDeleteCategoryPrompt(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                val confirmFocusRequester = remember { FocusRequester() }
+                LaunchedEffect(Unit) {
+                    confirmFocusRequester.requestFocus()
+                }
                 Spacer(Modifier.weight(1f))
                 ActionButton(
                     text = myStringResource(Res.string.delete),
                     onClick = onConfirm,
-                    borderColor = SolidColor(myColors.error),
+                    focusedBorderColor = SolidColor(myColors.error),
+                    modifier = Modifier.focusRequester(confirmFocusRequester),
                     contentColor = myColors.error,
                 )
                 Spacer(Modifier.width(8.dp))
@@ -558,33 +670,6 @@ private fun ShowDeleteCategoryPrompt(
         }
     }
 }
-
-@Stable
-class DeletePromptState(
-    val downloadList: List<Long>,
-    val finishedCount: Int,
-    val unfinishedCount: Int,
-) {
-    val hasFinishedDownloads = finishedCount > 0
-    var hasUnfinishedDownloads = unfinishedCount > 0
-    var alsoDeleteFile by mutableStateOf(false)
-
-    fun hasBothFinishedAndUnfinished(): Boolean {
-        return hasFinishedDownloads && hasUnfinishedDownloads
-    }
-}
-
-@Immutable
-data class CategoryDeletePromptState(
-    val category: Category,
-)
-
-@Immutable
-data class ConfirmPromptState(
-    val title: StringSource,
-    val description: StringSource,
-    val onConfirm: () -> Unit,
-)
 
 @Composable
 fun DragWidget(
@@ -617,7 +702,7 @@ fun DragWidget(
             text = myStringResource(Res.string.drop_link_or_file_here),
             fontSize = myTextSizes.xl
         )
-        if (linkCount != null) {
+        if (linkCount != null && Platform.isMac().not()) {
             when {
                 linkCount > 0 -> {
                     Text(
@@ -636,12 +721,8 @@ fun DragWidget(
                     Text(myStringResource(Res.string.nothing_will_be_imported))
                 }
             }
-
         }
-
     }
-
-
 }
 
 
@@ -654,7 +735,7 @@ private fun Categories(
     val currentTypeFilter = component.filterState.typeCategoryFilter
     val currentStatusFilter = component.filterState.statusFilter
     val categories by component.categoryManager.categoriesFlow.collectAsState()
-    val clipShape = RoundedCornerShape(6.dp)
+    val clipShape = myShapes.defaultRounded
     val showCategoryOption by component.categoryActions.collectAsState()
 
     fun showCategoryOption(item: Category?) {
@@ -670,9 +751,12 @@ private fun Categories(
             .clip(clipShape)
             .border(1.dp, myColors.surface, clipShape)
             .padding(1.dp)
-            .verticalScroll(rememberScrollState())
     ) {
-        var expendedItem: DownloadStatusCategoryFilter? by remember { mutableStateOf(currentStatusFilter) }
+        var expendedItem: DownloadStatusCategoryFilter? by remember {
+            mutableStateOf(
+                currentStatusFilter
+            )
+        }
         for (statusCategoryFilter in DefinedStatusCategories.values()) {
             StatusFilterItem(
                 isExpanded = expendedItem == statusCategoryFilter,
@@ -681,13 +765,19 @@ private fun Categories(
                 statusFilter = statusCategoryFilter,
                 categories = categories,
                 onFilterChange = {
-                    component.onFilterChange(statusCategoryFilter, it)
+                    component.onCategoryFilterChange(statusCategoryFilter, it)
                 },
                 onRequestExpand = { expand ->
                     expendedItem = statusCategoryFilter.takeIf { expand }
                 },
+                onItemsDroppedInCategory = { category, ids ->
+                    component.moveItemsToCategory(category, ids)
+                },
                 onRequestOpenOptionMenu = {
                     showCategoryOption(it)
+                },
+                onCategoryReorderRequest = { fromIndex, delta ->
+                    component.reorderCategory(fromIndex, delta)
                 }
             )
         }
@@ -707,10 +797,11 @@ fun CategoryOption(
     categoryOptionMenuState: CategoryActions,
     onDismiss: () -> Unit,
 ) {
-    ShowOptionsInDropDown(
+    ShowOptionsInPopup(
         MenuItem.SubMenu(
             icon = categoryOptionMenuState.categoryItem?.rememberIconPainter(),
-            title = categoryOptionMenuState.categoryItem?.name.orEmpty().asStringSource(),
+            title = categoryOptionMenuState.categoryItem?.name?.asStringSource()
+                ?: Res.string.categories.asStringSource(),
             categoryOptionMenuState.menu,
         ),
         onDismiss
@@ -722,11 +813,17 @@ private fun HomeMenuBar(
     component: HomeComponent,
     modifier: Modifier,
 ) {
+    val nativeMenuBarWithTitleBarInSettings by component.useNativeMenuBar.collectAsState()
     val menu = component.menu
-    MenuBar(
-        modifier,
-        menu
-    )
+    if (nativeMenuBarWithTitleBarInSettings) {
+        val scope = LocalFrameWindowScope.current
+        NativeMenuBar(scope, menu)
+    } else {
+        MenuBar(
+            modifier,
+            menu
+        )
+    }
 }
 
 @Composable
@@ -735,14 +832,39 @@ private fun Footer(component: HomeComponent) {
         modifier = Modifier.padding(vertical = 8.dp, horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        val selectionCount = component.selectionList.collectAsState().value.size
+        val totalCount = component.downloadList.collectAsState().value.size
+
+        val selectionSize by component.selectionContentSize.collectAsState()
+
+        if (selectionCount > 0) {
+            FooterItem(
+                MyIcons.check,
+                value = "$selectionCount",
+                unit = "/ $totalCount"
+            )
+
+            Spacer(Modifier.width(4.dp))
+            val sizeWithUnit = convertPositiveBytesToSizeUnit(selectionSize, LocalSizeUnit.current)
+            if (sizeWithUnit != null) {
+                FooterItem(
+                    MyIcons.data,
+                    value = sizeWithUnit.formatedValue(),
+                    unit = sizeWithUnit.unit.toString()
+                )
+            }
+        }
+
+
         Spacer(Modifier.weight(1f))
         val activeCount by component.activeDownloadCountFlow.collectAsState()
         FooterItem(MyIcons.activeCount, activeCount.toString(), "")
-        val size by component.globalSpeedFlow.collectAsState(0)
-        val speed = convertPositiveBytesToSizeUnit(size, LocalSpeedUnit.current)
-        if (speed != null) {
-            val speedText = speed.formatedValue()
-            val unitText = speed.unit.toString() + "/s"
+        val speed by component.globalSpeedFlow.collectAsState(0)
+        val speedWithUnit = convertPositiveBytesToSizeUnit(speed, LocalSpeedUnit.current)
+        if (speedWithUnit != null) {
+            Spacer(Modifier.width(4.dp))
+            val speedText = speedWithUnit.formatedValue()
+            val unitText = speedWithUnit.unit.toString() + "/s"
             FooterItem(MyIcons.speed, speedText, unitText)
         }
     }
@@ -751,15 +873,15 @@ private fun Footer(component: HomeComponent) {
 @Composable
 private fun FooterItem(icon: IconSource, value: String, unit: String) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        WithContentAlpha(0.25f) {
+        WithContentAlpha(0.50f) {
             MyIcon(icon, null, Modifier.size(16.dp))
         }
         Spacer(Modifier.width(8.dp))
-        WithContentAlpha(0.75f) {
+        WithContentAlpha(1f) {
             Text(value, maxLines = 1, fontSize = myTextSizes.base)
         }
         Spacer(Modifier.width(8.dp))
-        WithContentAlpha(0.25f) {
+        WithContentAlpha(0.5f) {
             Text(unit, maxLines = 1, fontSize = myTextSizes.base)
         }
     }

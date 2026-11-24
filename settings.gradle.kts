@@ -15,26 +15,23 @@ dependencyResolutionManagement {
 
 rootProject.name = "ABDownloadManager"
 
+include("android:app")
 include("desktop:app")
 include("desktop:app-utils")
-include("desktop:custom-window-frame")
 include("desktop:shared")
-include("desktop:tray:common")
-include("desktop:tray:windows")
-include("desktop:tray:linux")
+include("desktop:slf4j-impl")
+include("desktop:mac_utils")
 include("downloader:core")
 include("downloader:monitor")
 include("integration:server")
 include("shared:utils")
 include("shared:app")
-include("shared:app-utils")
 include("shared:compose-utils")
 include("shared:resources")
 include("shared:resources:contracts")
 include("shared:config")
 include("shared:updater")
 include("shared:auto-start")
-include("shared:nanohttp4k")
 includeBuild("./compositeBuilds/shared"){
     name="build-shared"
 }

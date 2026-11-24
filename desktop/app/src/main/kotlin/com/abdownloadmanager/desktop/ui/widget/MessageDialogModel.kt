@@ -2,40 +2,34 @@ package com.abdownloadmanager.desktop.ui.widget
 
 import com.abdownloadmanager.desktop.AppComponent
 import com.abdownloadmanager.desktop.window.custom.CustomWindow
-import com.abdownloadmanager.desktop.window.custom.WindowTitle
-import com.abdownloadmanager.shared.utils.ui.widget.MyIcon
-import com.abdownloadmanager.shared.utils.ui.icon.MyIcons
-import com.abdownloadmanager.shared.utils.ui.myColors
-import com.abdownloadmanager.shared.utils.ui.theme.myTextSizes
+import com.abdownloadmanager.desktop.window.custom.rememberWindowController
+import com.abdownloadmanager.shared.util.ui.widget.MyIcon
+import com.abdownloadmanager.shared.util.ui.icon.MyIcons
+import com.abdownloadmanager.shared.util.ui.myColors
+import com.abdownloadmanager.shared.util.ui.theme.myTextSizes
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.rememberWindowState
+import androidx.compose.ui.window.v2.WindowBoundsProvider
+import androidx.compose.ui.window.v2.WindowPositionProvider
+import androidx.compose.ui.window.v2.WindowSizeProvider
+import androidx.compose.ui.window.v2.rememberWindowState
 import com.abdownloadmanager.shared.ui.widget.ActionButton
 import com.abdownloadmanager.shared.ui.widget.Text
-import com.abdownloadmanager.shared.utils.ui.theme.LocalUiScale
+import com.abdownloadmanager.shared.util.ui.theme.LocalUiScale
 import com.abdownloadmanager.resources.Res
+import com.abdownloadmanager.shared.ui.widget.MessageDialogType
 import ir.amirab.util.compose.StringSource
 import ir.amirab.util.compose.resources.myStringResource
 import ir.amirab.util.desktop.screen.applyUiScale
-import java.awt.Dimension
 import java.util.UUID
-
-@Suppress("unused")
-sealed class MessageDialogType {
-    data object Success : MessageDialogType()
-    data object Info : MessageDialogType()
-    data object Error : MessageDialogType()
-    data object Warning : MessageDialogType()
-}
 
 data class MessageDialogModel(
     val id: String = UUID.randomUUID().toString(),
@@ -69,7 +63,12 @@ fun MessageDialog(
     val h = 200.applyUiScale(uiScale)
     val w = 400.applyUiScale(uiScale)
     val state = rememberWindowState(
-        size = DpSize(w.dp, h.dp)
+        initialBoundsProvider = WindowBoundsProvider(
+            sizeProvider = WindowSizeProvider.Fixed(
+                size = DpSize(w.dp, h.dp)
+            ),
+            positionProvider = WindowPositionProvider.CenteredOnScreen
+        )
     )
     CustomWindow(
         state,
@@ -77,12 +76,9 @@ fun MessageDialog(
         onRequestToggleMaximize = null,
         onCloseRequest = onConfirm,
         alwaysOnTop = true,
+        minSize = DpSize(w.dp, h.dp),
+        windowController = rememberWindowController(title = msgContent.type.toString()),
     ) {
-        LaunchedEffect(Unit) {
-            window.minimumSize = Dimension(w, h)
-        }
-        val typeName = msgContent.type.toString()
-        WindowTitle(typeName)
         Row(
             Modifier.padding(8.dp),
         ) {

@@ -1,15 +1,14 @@
 package com.abdownloadmanager.desktop.pages.addDownload.shared
 
-import com.abdownloadmanager.desktop.pages.settings.configurable.widgets.RenderConfigurable
+import com.abdownloadmanager.shared.ui.configurable.RenderConfigurable
 import com.abdownloadmanager.desktop.window.custom.BaseOptionDialog
-import com.abdownloadmanager.shared.utils.ui.myColors
+import com.abdownloadmanager.shared.util.ui.myColors
 import com.abdownloadmanager.shared.ui.widget.Text
-import com.abdownloadmanager.shared.utils.ui.WithContentColor
-import com.abdownloadmanager.shared.utils.div
+import com.abdownloadmanager.shared.util.ui.WithContentColor
+import com.abdownloadmanager.shared.util.div
 import com.abdownloadmanager.desktop.window.moveSafe
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.window.WindowDraggableArea
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -20,11 +19,15 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.rememberDialogState
-import com.abdownloadmanager.desktop.pages.settings.configurable.Configurable
-import com.abdownloadmanager.shared.utils.ui.theme.LocalUiScale
+import androidx.compose.ui.window.v2.WindowBoundsProvider
+import androidx.compose.ui.window.v2.WindowSizeProvider
+import androidx.compose.ui.window.v2.rememberDialogState
+import com.abdownloadmanager.shared.ui.configurable.Configurable
+import com.abdownloadmanager.shared.ui.configurable.ConfigurableUiProps
+import com.abdownloadmanager.shared.util.ui.MultiplatformVerticalScrollbar
+import com.abdownloadmanager.shared.util.ui.theme.LocalUiScale
+import com.abdownloadmanager.shared.util.ui.theme.myShapes
 import ir.amirab.util.desktop.screen.applyUiScale
-import java.awt.Dimension
 import java.awt.MouseInfo
 
 @Composable
@@ -35,12 +38,20 @@ fun ExtraConfig(
     val h = 250
     val w = 350
     val state = rememberDialogState(
-        size = DpSize(
-            height = h.dp,
-            width = w.dp,
-        ).applyUiScale(LocalUiScale.current),
+        initialBoundsProvider = WindowBoundsProvider(
+            sizeProvider = WindowSizeProvider.Fixed(
+                size = DpSize(
+                    height = h.dp,
+                    width = w.dp,
+                ).applyUiScale(LocalUiScale.current),
+            )
+        ),
     )
-    BaseOptionDialog(onDismiss, state) {
+    BaseOptionDialog(
+        onCloseRequest = onDismiss,
+        state = state,
+        minSize = DpSize(w.dp, h.dp),
+    ) {
         LaunchedEffect(window){
             window.moveSafe(
                 MouseInfo.getPointerInfo().location.run {
@@ -53,7 +64,7 @@ fun ExtraConfig(
         }
 
 
-        val shape = RoundedCornerShape(6.dp)
+        val shape = myShapes.defaultRounded
         Column(
             Modifier
                 .fillMaxSize()
@@ -69,9 +80,6 @@ fun ExtraConfig(
                 )
         ) {
             WithContentColor(myColors.onBackground) {
-                LaunchedEffect(w, h) {
-                    window.minimumSize = Dimension(w, h)
-                }
                 Column {
                     WindowDraggableArea(Modifier.fillMaxWidth()) {
                         Text(
@@ -90,14 +98,16 @@ fun ExtraConfig(
                             for ((index, cfg) in configurables.withIndex()) {
                                 RenderConfigurable(
                                     cfg,
-                                    Modifier.padding(vertical = 8.dp, horizontal = 32.dp)
+                                    ConfigurableUiProps(
+                                        itemPaddingValues = PaddingValues(vertical = 8.dp, horizontal = 32.dp)
+                                    )
                                 )
                                 if (index != configurables.lastIndex) {
                                     Divider()
                                 }
                             }
                         }
-                        VerticalScrollbar(
+                        MultiplatformVerticalScrollbar(
                             rememberScrollbarAdapter(scrollState),
                             Modifier.fillMaxHeight()
                                 .align(Alignment.CenterEnd)

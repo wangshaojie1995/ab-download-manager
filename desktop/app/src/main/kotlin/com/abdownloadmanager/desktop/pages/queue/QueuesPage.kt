@@ -1,58 +1,59 @@
 package com.abdownloadmanager.desktop.pages.queue
 
-import com.abdownloadmanager.desktop.pages.settings.configurable.widgets.ConfigurableGroup
-import com.abdownloadmanager.desktop.pages.settings.configurable.widgets.RenderConfigurableGroup
-import com.abdownloadmanager.shared.utils.ui.LocalContentAlpha
-import com.abdownloadmanager.shared.utils.ui.LocalContentColor
-import com.abdownloadmanager.desktop.window.custom.WindowTitle
-import ir.amirab.util.compose.IconSource
-import com.abdownloadmanager.shared.utils.ui.widget.MyIcon
-import com.abdownloadmanager.shared.utils.ui.icon.MyIcons
-import com.abdownloadmanager.shared.utils.ui.myColors
-import com.abdownloadmanager.shared.utils.ui.theme.myTextSizes
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.isCtrlPressed
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.abdownloadmanager.shared.ui.widget.*
 import com.abdownloadmanager.resources.Res
-import com.abdownloadmanager.shared.utils.div
-import ir.amirab.util.compose.resources.myStringResource
+import com.abdownloadmanager.shared.ui.configurable.ConfigurableGroup
+import com.abdownloadmanager.shared.ui.configurable.RenderConfigurableGroup
+import com.abdownloadmanager.shared.ui.widget.*
+import com.abdownloadmanager.shared.util.div
+import com.abdownloadmanager.shared.util.ui.LocalContentAlpha
+import com.abdownloadmanager.shared.util.ui.LocalContentColor
+import com.abdownloadmanager.shared.util.ui.VerticalScrollableContent
+import com.abdownloadmanager.shared.util.ui.icon.MyIcons
+import com.abdownloadmanager.shared.util.ui.myColors
+import com.abdownloadmanager.shared.util.ui.theme.myShapes
+import com.abdownloadmanager.shared.util.ui.theme.myTextSizes
+import com.abdownloadmanager.shared.util.ui.widget.MyIcon
 import ir.amirab.downloader.downloaditem.DownloadJobStatus
 import ir.amirab.downloader.monitor.IDownloadItemState
 import ir.amirab.downloader.monitor.statusOrFinished
 import ir.amirab.downloader.queue.DownloadQueue
+import ir.amirab.util.compose.IconSource
 import ir.amirab.util.compose.StringSource
 import ir.amirab.util.compose.asStringSource
-import kotlinx.coroutines.*
-import org.burnoutcrew.reorderable.*
+import ir.amirab.util.compose.resources.myStringResource
+import ir.amirab.util.desktop.isCtrlPressed
+import ir.amirab.util.desktop.isShiftPressed
+import kotlinx.coroutines.launch
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.ReorderableLazyListState
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 
 @Composable
 fun QueuePage(component: QueuesComponent) {
     val queues = component.queuesState
     val activeItem: DownloadQueue = component.selectedItem
-    WindowTitle(myStringResource(Res.string.queues))
-    val borderShape = RoundedCornerShape(6.dp)
-    val borderColor = myColors.onBackground / 5
+    val borderShape = myShapes.defaultRounded
+    val borderColor = myColors.surface
     Column {
         Row(
             Modifier.weight(1f)
@@ -77,9 +78,12 @@ fun QueuePage(component: QueuesComponent) {
                 modifier = Modifier
                     .weight(1f)
                     .padding(2.dp)
-                    .border(1.dp, borderColor, borderShape),
+                    .border(1.dp, borderColor, borderShape)
+                    .padding(1.dp)
+                    .clip(borderShape),
                 item = activeItem,
                 component = component.queueInfoComponent.collectAsState().value.child!!.instance,
+                borderColor = borderColor,
             )
         }
         Actions(component, activeItem)
@@ -142,6 +146,7 @@ private fun QueueInfo(
     modifier: Modifier,
     item: DownloadQueue,
     component: QueueInfoComponent,
+    borderColor: Color,
 ) {
     val fm = LocalFocusManager.current
     //remove focus to prevent accidentally change config in different queue
@@ -152,14 +157,8 @@ private fun QueueInfo(
         mutableStateOf(QueueInfoPages.Config)
     }
     Column(modifier) {
-        val shape = RoundedCornerShape(6.dp)
         Column(
             Modifier
-                .clip(shape)
-                .background(myColors.surface)
-                .padding(horizontal = 4.dp)
-                .padding(top = 1.dp)
-                .padding(bottom = 1.dp)
         ) {
             MyTabRow {
                 QueueInfoPages.entries.forEach {
@@ -171,11 +170,10 @@ private fun QueueInfo(
                     )
                 }
             }
+            Spacer(Modifier.fillMaxWidth().height(1.dp).background(borderColor))
             val pageModifier = Modifier
                 .fillMaxSize()
-                .clip(shape)
-                .background(myColors.background)
-                .padding(16.dp)
+                .padding(4.dp)
             when (currentPage) {
                 QueueInfoPages.Config -> RenderQueueConfig(pageModifier, component)
                 QueueInfoPages.Items -> RenderQueueItems(pageModifier, component)
@@ -190,25 +188,66 @@ fun RenderQueueItems(
     component: QueueInfoComponent,
 ) {
     val windowInfo = LocalWindowInfo.current
-    fun isCtrlPressed() = windowInfo.keyboardModifiers.isCtrlPressed
-    val queueModel by component.downloadQueue.queueModel.collectAsState()
     val downloadItems by component.downloadQueueItems.collectAsState()
     val selectedIds by component.selectedListItems.collectAsState()
+    val lazyListState = rememberLazyListState()
     val state = rememberReorderableLazyListState(
+        lazyListState,
         onMove = { from, to ->
             component.swapItem(from.index, to.index)
         }
     )
-
+    val listInteractionSource = remember { MutableInteractionSource() }
     Column(modifier) {
         LazyColumn(
-            state = state.listState,
+            state = lazyListState,
             verticalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier
                 .weight(1f)
-                .reorderable(state)
+                .clickable(
+                    indication = null,
+                    interactionSource = listInteractionSource
+                ) {
+                    component.clearSelection()
+                }
+                .onKeyEvent {
+                    if (it.type != KeyEventType.KeyDown) {
+                        return@onKeyEvent false
+                    }
+                    when (it.key) {
+                        Key.A if it.isCtrlPressed -> {
+                            component.selectAll()
+                            true
+                        }
+
+                        Key.Escape -> {
+                            component.clearSelection()
+                            true
+                        }
+
+                        Key.Delete -> {
+                            component.deleteItems()
+                            true
+                        }
+
+                        Key.DirectionUp -> {
+                            component.moveUpItems()
+                            true
+                        }
+
+                        Key.DirectionDown -> {
+                            component.moveDownItems()
+                            true
+                        }
+
+                        else -> {
+                            false
+                        }
+                    }
+                }
         ) {
-            itemsIndexed(downloadItems,
+            itemsIndexed(
+                downloadItems,
                 key = { _, item -> item.id }
             ) { index, downloadItem ->
                 RenderQueueItem(
@@ -219,7 +258,8 @@ fun RenderQueueItems(
                         component.setSelectedItem(
                             id = downloadItem.id,
                             selected = selected,
-                            singleSelect = !isCtrlPressed()
+                            ctrlPressed = isCtrlPressed(windowInfo),
+                            shiftPressed = isShiftPressed(windowInfo),
                         )
                     },
                     index = index
@@ -237,7 +277,7 @@ fun RenderQueueItems(
             val space = 4.dp
             IconActionButton(
                 icon = MyIcons.remove,
-                contentDescription = myStringResource(Res.string.remove),
+                contentDescription = Res.string.remove.asStringSource(),
                 onClick = {
                     component.deleteItems()
                 },
@@ -246,7 +286,7 @@ fun RenderQueueItems(
             Spacer(Modifier.weight(1f))
             IconActionButton(
                 icon = MyIcons.down,
-                contentDescription = myStringResource(Res.string.move_down),
+                contentDescription = Res.string.move_down.asStringSource(),
                 onClick = {
                     component.moveDownItems()
                 },
@@ -255,7 +295,7 @@ fun RenderQueueItems(
             Spacer(Modifier.width(space))
             IconActionButton(
                 icon = MyIcons.up,
-                contentDescription = myStringResource(Res.string.move_up),
+                contentDescription = Res.string.move_up.asStringSource(),
                 onClick = {
                     component.moveUpItems()
                 },
@@ -278,16 +318,7 @@ private fun LazyItemScope.RenderQueueItem(
     ) { dragging ->
         Box(
             modifier = Modifier
-                .background(
-                    animateColorAsState(
-                        if (dragging) {
-                            myColors.onBackground / 10
-                        } else {
-                            Color.Transparent
-                        }
-                    ).value
-                )
-                .detectReorder(state)
+                .draggableHandle()
         ) {
             NavigateableItem(
                 isSelected = isSelected,
@@ -295,11 +326,7 @@ private fun LazyItemScope.RenderQueueItem(
                     setSelected(!isSelected)
                 },
                 content = {
-                    val isActive = if (value.statusOrFinished() is DownloadJobStatus.IsActive) {
-                        true
-                    } else {
-                        false
-                    }
+                    val isActive = value.statusOrFinished() is DownloadJobStatus.IsActive
                     Row {
                         Text(
                             "${index + 1}. ",
@@ -333,17 +360,26 @@ private fun RenderQueueConfig(
     component: QueueInfoComponent,
 ) {
     val configurables: List<ConfigurableGroup> = component.configurations
-    Column(
-        modifier
-            .verticalScroll(rememberScrollState())
-    ) {
-        for ((index, cfgGroup) in configurables.withIndex()) {
-            RenderConfigurableGroup(
-                cfgGroup,
-                Modifier
-            )
-            if (index != configurables.lastIndex) {
-                Spacer(Modifier.height(4.dp))
+    val scrollState = rememberScrollState()
+    VerticalScrollableContent(scrollState) {
+        Column(
+            modifier
+                .verticalScroll(scrollState)
+                .padding(
+                    horizontal = 8.dp,
+                    vertical = 8.dp,
+                ),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            for ((index, cfgGroup) in configurables.withIndex()) {
+                RenderConfigurableGroup(
+                    cfgGroup,
+                    Modifier,
+                    itemPadding = PaddingValues(
+                        vertical = 8.dp,
+                        horizontal = 16.dp
+                    ),
+                )
             }
         }
     }
@@ -387,16 +423,17 @@ private fun QueueListSection(
                         modifier = Modifier.weight(1f)
                     )
                     Spacer(Modifier.width(8.dp))
-                    Spacer(Modifier
-                        .size(8.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (isQueueActive) {
-                                myColors.success
-                            } else {
-                                myColors.onSurface / 50
-                            }
-                        )
+                    Spacer(
+                        Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (isQueueActive) {
+                                    myColors.success
+                                } else {
+                                    myColors.onSurface / 50
+                                }
+                            )
                     )
                 }
             }
@@ -418,7 +455,7 @@ private fun QueueListSection(
         ) {
             IconActionButton(
                 icon = MyIcons.add,
-                contentDescription = myStringResource(Res.string.add_new_queue),
+                contentDescription = Res.string.add_new_queue.asStringSource(),
                 onClick = {
                     component.addQueue()
                 }
@@ -426,7 +463,7 @@ private fun QueueListSection(
             spacer()
             IconActionButton(
                 icon = MyIcons.remove,
-                contentDescription = myStringResource(Res.string.remove_queue),
+                contentDescription = Res.string.remove_queue.asStringSource(),
                 enabled = component.canDeleteThisQueue(selectedItem),
                 onClick = {
                     component.requestDeleteQueue(selectedItem)

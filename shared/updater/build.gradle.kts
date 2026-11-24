@@ -1,12 +1,27 @@
 plugins {
-    id(MyPlugins.kotlin)
+    id(MyPlugins.kotlinMultiplatform)
+    id(Plugins.Android.multiplatformLibrary)
     id(Plugins.Kotlin.serialization)
 }
-dependencies {
-    implementation(libs.kotlin.serialization.json)
-    api(libs.okhttp.okhttp)
-    api(libs.kotlin.coroutines.core)
-    implementation(project(":shared:utils"))
-    implementation(libs.jna.platform)
-    implementation(libs.semver)
+kotlin {
+    jvm("desktop")
+    android {
+        namespace = "com.abdownloadmanager.updater"
+        compileSdk = libs.versions.androidCompileSdk.get().toInt()
+        minSdk = 26
+    }
+    sourceSets {
+        commonMain.dependencies {
+            implementation(libs.kotlin.serialization.json)
+            api(libs.okhttp.okhttp)
+            api(libs.kotlin.coroutines.core)
+            implementation(project(":shared:utils"))
+            implementation(libs.semver)
+            implementation("ir.amirab.util:platform:1")
+        }
+        val desktopMain = getByName("desktopMain")
+        desktopMain.dependencies {
+            implementation(libs.jna.platform)
+        }
+    }
 }

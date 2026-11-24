@@ -1,41 +1,85 @@
 package com.abdownloadmanager.desktop.di
 
-import GithubApi
+import com.abdownloadmanager.github.GithubApi
 import com.abdownloadmanager.UpdateDownloadLocationProvider
 import com.abdownloadmanager.UpdateManager
+import com.abdownloadmanager.desktop.DesktopAddDownloadDialogManager
 import com.abdownloadmanager.desktop.AppArguments
 import com.abdownloadmanager.integration.IntegrationHandler
 import com.abdownloadmanager.desktop.AppComponent
-import com.abdownloadmanager.desktop.SharedConstants
+import com.abdownloadmanager.desktop.DesktopDownloadDialogManager
+import com.abdownloadmanager.shared.pagemanager.EditDownloadDialogManager
+import com.abdownloadmanager.shared.pagemanager.FileChecksumDialogManager
+import com.abdownloadmanager.shared.pagemanager.NotificationSender
+import com.abdownloadmanager.shared.pagemanager.PerHostSettingsPageManager
+import com.abdownloadmanager.shared.pagemanager.QueuePageManager
+import com.abdownloadmanager.shared.util.SharedConstants
+import com.abdownloadmanager.desktop.PowerActionManager
+import com.abdownloadmanager.desktop.actions.onevennts.DesktopOnDownloadCompletionActionProvider
+import com.abdownloadmanager.desktop.actions.onevennts.DesktopOnQueueEventActionProvider
 import com.abdownloadmanager.desktop.integration.IntegrationHandlerImp
-import com.abdownloadmanager.desktop.pages.settings.ThemeManager
-import com.abdownloadmanager.desktop.pages.updater.UpdateDownloaderViaDownloadSystem
+import com.abdownloadmanager.desktop.pages.category.DesktopCategoryDialogManager
+import com.abdownloadmanager.desktop.pages.settings.FontManager
+import com.abdownloadmanager.shared.ui.theme.ThemeManager
 import ir.amirab.downloader.queue.QueueManager
 import com.abdownloadmanager.desktop.repository.AppRepository
 import com.abdownloadmanager.desktop.storage.*
-import com.abdownloadmanager.shared.utils.ui.icon.MyIcons
-import com.abdownloadmanager.shared.utils.ui.theme.ISystemThemeDetector
+import com.abdownloadmanager.shared.util.ui.icon.MyIcons
+import com.abdownloadmanager.shared.util.ui.theme.ISystemThemeDetector
 import com.abdownloadmanager.desktop.utils.*
-import com.abdownloadmanager.desktop.utils.native_messaging.NativeMessaging
-import com.abdownloadmanager.desktop.utils.native_messaging.NativeMessagingManifestApplier
+import com.abdownloadmanager.desktop.nativemessaging.NativeMessaging
 import com.abdownloadmanager.desktop.utils.proxy.AutoConfigurableProxyProviderForDesktop
 import com.abdownloadmanager.desktop.utils.proxy.DesktopSystemProxySelectorProvider
 import com.abdownloadmanager.desktop.utils.proxy.ProxyCachingConfig
+import com.abdownloadmanager.desktop.utils.renderapi.CustomRenderApi
+import com.abdownloadmanager.integration.model.HLSDownloadCredentialsFromIntegration
+import com.abdownloadmanager.integration.model.HttpDownloadCredentialsFromIntegration
+import com.abdownloadmanager.integration.model.IDownloadCredentialsFromIntegration
 import com.arkivanov.decompose.DefaultComponentContext
 import com.arkivanov.essenty.lifecycle.LifecycleRegistry
 import ir.amirab.downloader.DownloadManagerMinimalControl
 import ir.amirab.downloader.DownloadSettings
-import ir.amirab.downloader.connection.DownloaderClient
-import ir.amirab.downloader.connection.OkHttpDownloaderClient
+import ir.amirab.downloader.connection.HttpDownloaderClient
+import ir.amirab.downloader.connection.OkHttpHttpDownloaderClient
 import ir.amirab.downloader.db.*
 import ir.amirab.downloader.monitor.DownloadMonitor
 import ir.amirab.downloader.utils.IDiskStat
-import ir.amirab.util.startup.Startup
 import com.abdownloadmanager.integration.Integration
-import com.abdownloadmanager.updateapplier.DesktopUpdateApplier
+import com.abdownloadmanager.resources.ABDMLanguageResources
+import com.abdownloadmanager.shared.IApplicationBackgroundTracker
+import com.abdownloadmanager.shared.downloaderinui.DownloaderInUiRegistry
+import com.abdownloadmanager.shared.downloaderinui.hls.HLSDownloaderInUi
+import com.abdownloadmanager.shared.downloaderinui.http.HttpDownloaderInUi
+import com.abdownloadmanager.shared.pagemanager.SettingsPageManager
+import com.abdownloadmanager.shared.platformApplicationBackgroundTracker
+import com.abdownloadmanager.shared.repository.BaseAppRepository
+import com.abdownloadmanager.shared.storage.appsettings.BaseAppSettingsStorage
+import com.abdownloadmanager.shared.storage.DnsSettings
+import com.abdownloadmanager.shared.storage.ExtraDownloadSettingsStorage
+import com.abdownloadmanager.shared.storage.ExtraQueueSettingsStorage
+import com.abdownloadmanager.shared.storage.IDNSSettingsStorage
+import com.abdownloadmanager.shared.storage.IExtraDownloadSettingsStorage
+import com.abdownloadmanager.shared.storage.IExtraQueueSettingsStorage
+import com.abdownloadmanager.shared.storage.ISelectQueueStorage
+import com.abdownloadmanager.shared.storage.PerHostSettingsDatastoreStorage
+import com.abdownloadmanager.shared.storage.ProxyDatastoreStorage
+import com.abdownloadmanager.shared.storage.SelectQueueSettings
+import com.abdownloadmanager.shared.storage.appsettings.DesktopSettingsSchema
+import com.abdownloadmanager.shared.storage.impl.DNSStorage
+import com.abdownloadmanager.shared.storage.impl.SelectQueueStorage
+import com.abdownloadmanager.shared.ui.theme.ThemeSettingsStorage
+import com.abdownloadmanager.shared.ui.widget.NotificationManager
+import com.abdownloadmanager.shared.updater.UpdateDownloaderViaDownloadSystem
+import com.abdownloadmanager.shared.util.AppVersion
+import com.abdownloadmanager.shared.util.DefinedPaths
+import com.abdownloadmanager.shared.util.DesktopDiskStat
+import com.abdownloadmanager.shared.util.DesktopSystemThemeDetector
+import com.abdownloadmanager.shared.util.SizeAndSpeedUnitProvider
+import com.abdownloadmanager.shared.util.UserAgentProviderFromSettings
+import com.abdownloadmanager.shared.util.*
+import com.abdownloadmanager.updateapplier.DesktopDirectLinkUpdateApplier
 import com.abdownloadmanager.updateapplier.UpdateApplier
 import ir.amirab.downloader.DownloadManager
-import ir.amirab.util.config.datastore.createMapConfigDatastore
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.Json
 import okhttp3.Dispatcher
@@ -46,40 +90,79 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 import com.abdownloadmanager.updatechecker.GithubUpdateChecker
 import com.abdownloadmanager.updatechecker.UpdateChecker
-import com.abdownloadmanager.shared.utils.DownloadFoldersRegistry
-import com.abdownloadmanager.shared.utils.DownloadSystem
-import com.abdownloadmanager.shared.utils.FileIconProvider
-import com.abdownloadmanager.shared.utils.FileIconProviderUsingCategoryIcons
 import ir.amirab.util.AppVersionTracker
-import com.abdownloadmanager.shared.utils.appinfo.PreviousVersion
-import com.abdownloadmanager.shared.utils.autoremove.RemovedDownloadsFromDiskTracker
-import com.abdownloadmanager.shared.utils.category.*
-import com.abdownloadmanager.shared.utils.ui.IMyIcons
-import com.abdownloadmanager.shared.utils.proxy.IProxyStorage
-import com.abdownloadmanager.shared.utils.proxy.ProxyData
-import com.abdownloadmanager.shared.utils.proxy.ProxyManager
+import com.abdownloadmanager.shared.util.appinfo.PreviousVersion
+import com.abdownloadmanager.shared.util.autoremove.RemovedDownloadsFromDiskTracker
+import com.abdownloadmanager.shared.util.category.*
+import com.abdownloadmanager.shared.util.di.BaseOKHttpClientQualifier
+import com.abdownloadmanager.shared.util.dns.AppDns
+import com.abdownloadmanager.shared.util.dns.DnsOptionProvider
+import com.abdownloadmanager.shared.util.downloaderror.DownloadErrorMapperRegistryFactory
+import com.abdownloadmanager.shared.util.downloaderror.faileddownloads.FailedDownloadErrorStorageInMemory
+import com.abdownloadmanager.shared.util.downloaderror.faileddownloads.FailedDownloads
+import com.abdownloadmanager.shared.util.downloaderror.faileddownloads.IFailedDownloadErrorStorage
+import com.abdownloadmanager.shared.util.keepawake.KeepAwakeManager
+import com.abdownloadmanager.shared.util.keepawake.platformKeepAwake
+import com.abdownloadmanager.shared.util.notification.INotificationSettingsStorage
+import com.abdownloadmanager.shared.util.ondownloadcompletion.OnDownloadCompletionActionProvider
+import com.abdownloadmanager.shared.util.ondownloadcompletion.OnDownloadCompletionActionRunner
+import com.abdownloadmanager.shared.util.onqueuecompletion.OnQueueEventActionRunner
+import com.abdownloadmanager.shared.util.onqueuecompletion.OnQueueCompletionActionProvider
+import com.abdownloadmanager.shared.util.perhostsettings.IPerHostSettingsStorage
+import com.abdownloadmanager.shared.util.perhostsettings.PerHostSettingsItem
+import com.abdownloadmanager.shared.util.perhostsettings.PerHostSettingsManager
+import com.abdownloadmanager.shared.util.ui.IMyIcons
+import com.abdownloadmanager.shared.util.proxy.IProxyStorage
+import com.abdownloadmanager.shared.util.proxy.ProxyData
+import com.abdownloadmanager.shared.util.proxy.ProxyManager
+import com.abdownloadmanager.shared.util.systemusage.SystemUsageMonitor
+import com.abdownloadmanager.shared.util.systemusage.platformSystemUsageMonitor
+import com.arkivanov.essenty.lifecycle.Lifecycle
+import ir.amirab.downloader.DownloaderRegistry
+import ir.amirab.downloader.connection.UserAgentProvider
 import ir.amirab.downloader.connection.proxy.AutoConfigurableProxyProvider
 import ir.amirab.downloader.connection.proxy.ProxyStrategyProvider
 import ir.amirab.downloader.connection.proxy.SystemProxySelectorProvider
+import ir.amirab.downloader.downloaditem.DownloadJob
+import ir.amirab.downloader.downloaditem.IDownloadCredentials
+import ir.amirab.downloader.downloaditem.IDownloadItem
+import ir.amirab.downloader.downloaditem.hls.HLSDownloader
+import ir.amirab.downloader.downloaditem.http.HttpDownloadCredentials
+import ir.amirab.downloader.downloaditem.http.HttpDownloadItem
+import ir.amirab.downloader.downloaditem.http.HttpDownloader
+import ir.amirab.downloader.monitor.DownloadItemStateFactory
 import ir.amirab.downloader.monitor.IDownloadMonitor
+import ir.amirab.downloader.queue.ManualDownloadQueue
 import ir.amirab.downloader.utils.EmptyFileCreator
+import ir.amirab.util.compose.IIconResolver
 import ir.amirab.util.compose.localizationmanager.LanguageManager
+import ir.amirab.util.compose.localizationmanager.LanguageSourceProvider
 import ir.amirab.util.compose.localizationmanager.LanguageStorage
+import ir.amirab.util.config.datastore.createSchemaBasedDatastore
 import ir.amirab.util.config.datastore.kotlinxSerializationDataStore
+import ir.amirab.util.startup.AbstractStartupManager
+import ir.amirab.util.startup.Startup
+import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.polymorphic
+import okhttp3.Protocol
+import okhttp3.internal.tls.OkHostnameVerifier
 
 val downloaderModule = module {
     single<IDownloadQueueDatabase> {
+        val definedPaths = get<DefinedPaths>()
+
         DownloadQueueFileStorageDatabase(
             queueFolder = get<DownloadFoldersRegistry>().registerAndGet(
-                AppInfo.downloadDbDir.resolve("queues")
+                definedPaths.queuesDir
             ),
             fileSaver = get(),
         )
     }
     single<IDownloadListDb> {
+        val definedPaths = get<DefinedPaths>()
         DownloadListFileStorage(
             downloadListFolder = get<DownloadFoldersRegistry>().registerAndGet(
-                AppInfo.downloadDbDir.resolve("downloadlist")
+                definedPaths.downloadListDir
             ),
             fileSaver = get(),
         )
@@ -88,9 +171,10 @@ val downloaderModule = module {
         TransactionalFileSaver(get())
     }
     single<IDownloadPartListDb> {
+        val definedPaths = get<DefinedPaths>()
         PartListFileStorage(
             get<DownloadFoldersRegistry>().registerAndGet(
-                AppInfo.downloadDbDir.resolve("parts")
+                definedPaths.partsDir
             ),
             get()
         )
@@ -126,15 +210,13 @@ val downloaderModule = module {
     single<SystemProxySelectorProvider> {
         DesktopSystemProxySelectorProvider(get())
     }
-    single<DownloaderClient> {
-        OkHttpDownloaderClient(
-            OkHttpClient
-                .Builder()
-                .dispatcher(Dispatcher().apply {
-                    //bypass limit on concurrent connections!
-                    maxRequests = Int.MAX_VALUE
-                    maxRequestsPerHost = Int.MAX_VALUE
-                }).build(),
+    single<UserAgentProvider> {
+        UserAgentProviderFromSettings(get())
+    }
+    single<HttpDownloaderClient> {
+        OkHttpHttpDownloaderClient(
+            get(),
+            get(),
             get(),
             get(),
             get(),
@@ -148,18 +230,59 @@ val downloaderModule = module {
         )
     }
     single {
-        DownloadManager(get(), get(), get(), get(), get(), get())
+        HLSDownloader(inject())
+    }
+    single {
+        HLSDownloaderInUi(get(), get())
+    }
+    single {
+        HttpDownloader(inject())
+    }
+    single {
+        HttpDownloaderInUi(get(), get())
+    }
+    single {
+        DownloaderInUiRegistry().apply {
+            add(get<HttpDownloaderInUi>())
+            add(get<HLSDownloaderInUi>())
+        }
+    }.bind<DownloadItemStateFactory<IDownloadItem, DownloadJob>>()
+    single {
+        DownloaderRegistry().apply {
+            add(get<HttpDownloader>())
+            add(get<HLSDownloader>())
+        }
+    }
+    single {
+        val definedPaths = get<DefinedPaths>()
+        DownloadManager(
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get<DownloadFoldersRegistry>().registerAndGet(
+                definedPaths.downloadDataDir
+            )
+        )
     }.bind(DownloadManagerMinimalControl::class)
+    single {
+        ManualDownloadQueue(get(), get())
+    }
     single<IDownloadMonitor> {
-        DownloadMonitor(get())
+        DownloadMonitor(
+            downloadManager = get(),
+            manualDownloadQueue = get(),
+            downloadItemStateFactory = inject(),
+        )
     }
 }
 val downloadSystemModule = module {
     single {
+        val definedPaths = get<DefinedPaths>()
+        get<DownloadFoldersRegistry>().registerAndGet(definedPaths.categoriesDir)
         CategoryFileStorage(
-            file = get<DownloadFoldersRegistry>().registerAndGet(
-                AppInfo.downloadDbDir.resolve("categories")
-            ).resolve("categories.json"),
+            file = definedPaths.categoriesFile.toFile(),
             fileSaver = get()
         )
     }.bind<CategoryStorage>()
@@ -167,7 +290,8 @@ val downloadSystemModule = module {
         FileIconProviderUsingCategoryIcons(
             get(),
             get(),
-            MyIcons,
+            get(),
+            get(),
         )
     }.bind<FileIconProvider>()
     single {
@@ -191,7 +315,67 @@ val downloadSystemModule = module {
     }
 
     single {
-        DownloadSystem(get(), get(), get(), get(), get(), get(), get())
+        DownloadSystem(
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+        )
+    }
+    single {
+        val definedPaths = get<DefinedPaths>()
+        val extraDownloadSettingsStorageFolder = get<DownloadFoldersRegistry>().registerAndGet(
+            definedPaths.extraDownloadSettings
+        )
+        ExtraDownloadSettingsStorage(
+            extraDownloadSettingsStorageFolder,
+            get(),
+            DesktopExtraDownloadItemSettings
+        )
+    }.bind<IExtraDownloadSettingsStorage<*>>()
+    single {
+        val definedPaths = get<DefinedPaths>()
+        val extraQueueSettingsStorageFolder = get<DownloadFoldersRegistry>().registerAndGet(
+            definedPaths.extraQueueSettings
+        )
+        ExtraQueueSettingsStorage(
+            extraQueueSettingsStorageFolder,
+            get(),
+            DesktopExtraQueueSettings
+        )
+    }.apply {
+        bind<IExtraQueueSettingsStorage<*>>()
+    }
+    single<OnDownloadCompletionActionProvider> {
+        DesktopOnDownloadCompletionActionProvider(get())
+    }
+    single<OnQueueCompletionActionProvider> {
+        DesktopOnQueueEventActionProvider(get())
+    }
+    single {
+        OnDownloadCompletionActionRunner(
+            downloadManagerMinimalControl = get(),
+            scope = get(),
+            onDownloadCompletionActionProvider = get(),
+        )
+    }
+    single {
+        OnQueueEventActionRunner(
+            queueManager = get(),
+            scope = get(),
+            onQueueCompletionActionProvider = get(),
+        )
     }
 }
 val coroutineModule = module {
@@ -201,10 +385,43 @@ val coroutineModule = module {
 }
 val jsonModule = module {
     single {
+        val downloaderRegistry: DownloaderRegistry by inject()
         Json {
             this.encodeDefaults = true
             this.prettyPrint = true
             this.ignoreUnknownKeys = true
+            this.serializersModule = SerializersModule {
+                polymorphic(IDownloadItem::class) {
+                    downloaderRegistry.getAll().forEach {
+                        subclass(it.downloadItemClass, it.downloadItemSerializer)
+                    }
+                    defaultDeserializer {
+                        HttpDownloadItem.serializer()
+                    }
+                }
+                polymorphic(IDownloadCredentials::class) {
+                    downloaderRegistry.getAll().forEach {
+                        subclass(it.downloadCredentialsClass, it.downloadCredentialsSerializer)
+                    }
+                    defaultDeserializer {
+                        HttpDownloadCredentials.serializer()
+                    }
+                }
+                // TODO remove this later
+                polymorphic(IDownloadCredentialsFromIntegration::class) {
+                    subclass(
+                        HttpDownloadCredentialsFromIntegration::class,
+                        HttpDownloadCredentialsFromIntegration.serializer()
+                    )
+                    subclass(
+                        HLSDownloadCredentialsFromIntegration::class,
+                        HLSDownloadCredentialsFromIntegration.serializer()
+                    )
+                    defaultDeserializer {
+                        HttpDownloadCredentialsFromIntegration.serializer()
+                    }
+                }
+            }
         }
     }
 }
@@ -213,22 +430,25 @@ val integrationModule = module {
         IntegrationHandlerImp()
     }
     single {
-        Integration(get(), get(), AppInfo.isInDebugMode())
+        Integration(get(), get(), get(), AppInfo.isInDebugMode())
     }
 }
 val updaterModule = module {
     single {
+        val definedPaths = get<DefinedPaths>()
         UpdateDownloadLocationProvider {
-            AppInfo.updateDir.resolve("downloads")
+            definedPaths.updateDownloadLocation.toFile()
         }
     }
     single<UpdateApplier> {
-        DesktopUpdateApplier(
+        val definedPaths = get<DefinedPaths>()
+        definedPaths.updateDownloadLocation
+        DesktopDirectLinkUpdateApplier(
             installationFolder = AppInfo.installationFolder,
-            updateFolder = AppInfo.updateDir.path,
-            logDir = AppInfo.logDir.path,
+            updateFolder = definedPaths.updateDir.toString(),
+            logDir = definedPaths.logDir.toString(),
             appName = AppInfo.name,
-            updateDownloader = UpdateDownloaderViaDownloadSystem(
+            updatePreparer = UpdateDownloaderViaDownloadSystem(
                 get(),
                 get(),
             ),
@@ -258,14 +478,17 @@ val startUpModule = module {
     single {
         Startup.getStartUpManagerForDesktop(
             name = AppInfo.displayName,
-            path = AppInfo.exeFile,
+            path = AppInfo.mainExeFile,
             args = listOf(AppArguments.Args.BACKGROUND),
+            packageName = AppInfo.packageName,
         )
+    }.apply {
+        bind<AbstractStartupManager>()
     }
 }
 val nativeMessagingModule = module {
     single<NativeMessaging> {
-        NativeMessaging(NativeMessagingManifestApplier.getForCurrentPlatform())
+        NativeMessaging.getDefault(get())
     }
 }
 
@@ -282,50 +505,103 @@ val appModule = module {
 //        NetworkChecker(get())
 //    }
     single {
-        AppRepository()
+        AppInfo.definedPaths
+    }.bind<DefinedPaths>()
+    single {
+        AppRepository(
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+            get(),
+        )
+    }.apply {
+        bind<BaseAppRepository>()
+        bind<SizeAndSpeedUnitProvider>()
     }
     single {
         ThemeManager(get(), get(), get())
     }
     single {
-        LanguageManager(get())
+        FontManager(get())
+    }
+    single {
+        LanguageManager(
+            get(),
+            LanguageSourceProvider(
+                ABDMLanguageResources.defaultLanguageResource,
+                ABDMLanguageResources.languages,
+            )
+        )
     }
     single {
         MyIcons
-    }.bind<IMyIcons>()
+    }.apply {
+        bind<IMyIcons>()
+        bind<IIconResolver>()
+    }
     single {
+        val definedPaths = get<DefinedPaths>()
         ProxyDatastoreStorage(
             kotlinxSerializationDataStore(
-                AppInfo.optionsDir.resolve("proxySettings.json"),
+                definedPaths.proxySettingsFile.toFile(),
                 get(),
                 ProxyData::default,
             )
         )
     }.bind<IProxyStorage>()
     single {
+        val definedPaths = get<DefinedPaths>()
         AppSettingsStorage(
-            createMapConfigDatastore(
-                AppInfo.configDir.resolve("appSettings.json"),
+            createSchemaBasedDatastore(
+                definedPaths.appSettingsFile.toFile(),
                 get(),
+                DesktopSettingsSchema,
             )
         )
-    }.bind<LanguageStorage>()
+    }.apply {
+        bind<BaseAppSettingsStorage>()
+        bind<LanguageStorage>()
+        bind<ThemeSettingsStorage>()
+        bind<INotificationSettingsStorage>()
+    }
     single {
+        val definedPaths = get<DesktopDefinedPaths>()
         PageStatesStorage(
-            createMapConfigDatastore(
-                AppInfo.configDir.resolve("pageStatesStorage.json"),
+            kotlinxSerializationDataStore(
+                definedPaths.pageStatesStorageFile.toFile(),
                 get(),
+                PageStatesModel::default,
             )
         )
     }
     single {
-        val lifecycle = LifecycleRegistry()
+        val lifecycle = LifecycleRegistry(
+            Lifecycle.State.RESUMED
+        )
         val context = DefaultComponentContext(lifecycle)
         runBlocking {
             withContext(Dispatchers.Main) {
                 AppComponent(context)
             }
         }
+    }.apply {
+        bind<DesktopDownloadDialogManager>()
+        bind<DesktopAddDownloadDialogManager>()
+        bind<DesktopCategoryDialogManager>()
+        bind<EditDownloadDialogManager>()
+        bind<FileChecksumDialogManager>()
+        bind<QueuePageManager>()
+        bind<NotificationSender>()
+        bind<DownloadItemOpener>()
+        bind<PerHostSettingsPageManager>()
+        bind<PowerActionManager>()
+        bind<SettingsPageManager>()
     }
     single {
         RemovedDownloadsFromDiskTracker(
@@ -333,8 +609,9 @@ val appModule = module {
         )
     }
     single {
+        val definedPaths = get<DefinedPaths>()
         PreviousVersion(
-            systemPath = AppInfo.systemDir,
+            systemPath = definedPaths.systemDir.toFile(),
             currentVersion = AppInfo.version,
         )
     }
@@ -348,6 +625,116 @@ val appModule = module {
         )
     }
 
+    single {
+        val appSettingsStorage: AppSettingsStorage = get()
+        AppSSLFactoryProvider(
+            ignoreSSLCertificates = appSettingsStorage.ignoreSSLCertificates
+        )
+    }
+    single {
+        val appSettingsStorage: AppSettingsStorage = get()
+        AppHostNameVerifier(
+            delegateHostnameVerifier = OkHostnameVerifier,
+            ignoreHostNameVerification = appSettingsStorage.ignoreSSLCertificates
+        )
+    }
+    single {
+        val definedPaths = get<DefinedPaths>()
+        DNSStorage(
+            kotlinxSerializationDataStore(
+                definedPaths.dnsSettingsFile.toFile(),
+                get(),
+                ::DnsSettings
+            )
+        )
+    }.apply {
+        bind<IDNSSettingsStorage>()
+        bind<DnsOptionProvider>()
+    }
+    single<OkHttpClient>(BaseOKHttpClientQualifier) {
+        val appSSLFactoryProvider: AppSSLFactoryProvider = get()
+        val appHostNameVerifier: AppHostNameVerifier = get()
+        OkHttpClient
+            .Builder()
+            .dispatcher(Dispatcher().apply {
+                //bypass limit on concurrent connections!
+                maxRequests = Int.MAX_VALUE
+                maxRequestsPerHost = Int.MAX_VALUE
+            })
+            .sslSocketFactory(
+                appSSLFactoryProvider.createSSLSocketFactory(),
+                appSSLFactoryProvider.trustManager,
+            )
+            .hostnameVerifier(appHostNameVerifier)
+            .build()
+    }
+    single<AppDns> {
+        AppDns(get<OkHttpClient>(BaseOKHttpClientQualifier), get())
+    }
+    single<OkHttpClient> {
+        val baseClient = get<OkHttpClient>(BaseOKHttpClientQualifier)
+        val appDns: AppDns = get()
+        baseClient.newBuilder()
+            .protocols(listOf(Protocol.HTTP_1_1))
+            .dns(appDns)
+            .build()
+    }
+    single {
+        KeepAwakeManager(
+            platformKeepAwake(),
+            get(),
+            get(),
+        )
+    }
+    single<SystemUsageMonitor> {
+        platformSystemUsageMonitor()
+    }
+    single<IApplicationBackgroundTracker> {
+        platformApplicationBackgroundTracker()
+    }
+    single<IPerHostSettingsStorage> {
+        val definedPaths = get<DefinedPaths>()
+        PerHostSettingsDatastoreStorage(
+            kotlinxSerializationDataStore<List<PerHostSettingsItem>>(
+                definedPaths.perHostSettingsFile.toFile(),
+                get(),
+                ::emptyList,
+            )
+        )
+    }
+    single {
+        DownloadErrorMapperRegistryFactory().createRegistry()
+    }
+    single<IFailedDownloadErrorStorage> {
+        FailedDownloadErrorStorageInMemory()
+    }
+    single {
+        FailedDownloads(
+            get(),
+            get(),
+            get(),
+            get(),
+        )
+    }
+    single<ISelectQueueStorage> {
+        val definedPaths = get<DesktopDefinedPaths>()
+        SelectQueueStorage(
+            kotlinxSerializationDataStore<SelectQueueSettings>(
+                definedPaths.selectQueueSettingsFile.toFile(),
+                get(),
+                ::SelectQueueSettings,
+            )
+        )
+    }
+    single {
+        PerHostSettingsManager(get())
+    }
+    single { NotificationManager() }
+
+    single {
+        val definedPaths = get<DesktopDefinedPaths>()
+        CustomRenderApi(definedPaths.renderApiFile)
+    }
 }
 
 

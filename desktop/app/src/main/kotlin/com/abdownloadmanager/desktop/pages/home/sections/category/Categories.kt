@@ -1,15 +1,23 @@
 package com.abdownloadmanager.desktop.pages.home.sections.category
 
 import androidx.compose.animation.*
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.PointerMatcher
 import androidx.compose.foundation.background
-import ir.amirab.util.compose.IconSource
-import com.abdownloadmanager.shared.utils.ui.widget.MyIcon
-import com.abdownloadmanager.shared.utils.ui.icon.MyIcons
-import com.abdownloadmanager.shared.utils.ui.theme.myTextSizes
+import androidx.compose.foundation.border
+import com.abdownloadmanager.shared.util.ui.widget.MyIcon
+import com.abdownloadmanager.shared.util.ui.icon.MyIcons
+import com.abdownloadmanager.shared.util.ui.theme.myTextSizes
 import com.abdownloadmanager.shared.ui.widget.ExpandableItem
-import com.abdownloadmanager.shared.utils.ui.WithContentAlpha
+import com.abdownloadmanager.shared.util.ui.WithContentAlpha
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.onClick
 import androidx.compose.foundation.selection.selectable
@@ -17,8 +25,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import com.abdownloadmanager.shared.ui.widget.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
@@ -26,83 +40,70 @@ import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.abdownloadmanager.shared.utils.ui.myColors
-import com.abdownloadmanager.shared.utils.div
+import com.abdownloadmanager.desktop.pages.home.dropDownloadItemsHere
+import com.abdownloadmanager.shared.util.ui.myColors
+import com.abdownloadmanager.shared.util.div
 import com.abdownloadmanager.resources.Res
-import com.abdownloadmanager.shared.utils.category.Category
-import com.abdownloadmanager.shared.utils.category.rememberIconPainter
-import ir.amirab.downloader.downloaditem.DownloadStatus
-import ir.amirab.downloader.monitor.IDownloadItemState
-import ir.amirab.downloader.monitor.statusOrFinished
-import ir.amirab.util.compose.StringSource
-import ir.amirab.util.compose.asStringSource
-
-class DownloadStatusCategoryFilterByList(
-    name: StringSource,
-    icon: IconSource,
-    val acceptedStatus: List<DownloadStatus>,
-) : DownloadStatusCategoryFilter(name, icon) {
-    override fun accept(iDownloadStatus: IDownloadItemState): Boolean {
-        return iDownloadStatus
-            .statusOrFinished()
-            .asDownloadStatus() in acceptedStatus
-    }
-}
-
-abstract class DownloadStatusCategoryFilter(
-    val name: StringSource,
-    val icon: IconSource,
-) {
-    abstract fun accept(iDownloadStatus: IDownloadItemState): Boolean
-}
-
-object DefinedStatusCategories {
-    fun values() = listOf(All, Finished, Unfinished)
-
-
-    val All = object : DownloadStatusCategoryFilter(
-        Res.string.all.asStringSource(),
-        MyIcons.folder,
-    ) {
-        override fun accept(iDownloadStatus: IDownloadItemState): Boolean = true
-    }
-    val Finished = DownloadStatusCategoryFilterByList(
-        Res.string.finished.asStringSource(),
-        MyIcons.folder,
-        listOf(DownloadStatus.Completed)
-    )
-    val Unfinished = DownloadStatusCategoryFilterByList(
-        Res.string.Unfinished.asStringSource(),
-        MyIcons.folder,
-        listOf(
-            DownloadStatus.Error,
-            DownloadStatus.Added,
-            DownloadStatus.Paused,
-            DownloadStatus.Downloading,
-        )
-    )
-}
+import com.abdownloadmanager.shared.pages.home.category.DownloadStatusCategoryFilter
+import com.abdownloadmanager.shared.ui.widget.DelayedTooltipPopup
+import com.abdownloadmanager.shared.util.category.Category
+import com.abdownloadmanager.shared.util.category.rememberIconPainter
+import com.abdownloadmanager.shared.util.ui.theme.mySpacings
+import ir.amirab.util.compose.resources.myStringResource
+import ir.amirab.util.ifThen
+import sh.calvin.reorderable.ReorderableColumn
+import sh.calvin.reorderable.ReorderableListItemScope
 
 
 @Composable
-private fun CategoryFilterItem(
+private fun ReorderableListItemScope.CategoryFilterItem(
     modifier: Modifier,
     category: Category,
     isSelected: Boolean,
+    onItemsDropped: (ids: List<Long>) -> Unit,
     onClick: () -> Unit,
+    isDragging: Boolean,
 ) {
+    var isDraggingOnMe by remember { mutableStateOf(false) }
+    val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val shouldShowDragIcon = isHovered && !isDraggingOnMe || isDragging
     Box(
         modifier
+            .dropDownloadItemsHere(
+                onDragIn = { isDraggingOnMe = true },
+                onDragDone = { isDraggingOnMe = false },
+                onItemsDropped = onItemsDropped,
+            )
+            .hoverable(interactionSource)
             .background(
                 if (isSelected) {
                     myColors.onBackground / 0.05f
                 } else Color.Transparent
             )
+            .ifThen(isDraggingOnMe) {
+                val infiniteTransition = rememberInfiniteTransition()
+                val color by infiniteTransition.animateColor(
+                    initialValue = myColors.primary,
+                    targetValue = myColors.secondary,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(1000, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse
+                    )
+                )
+                border(1.dp, color)
+            }
             .selectable(
                 selected = isSelected,
                 onClick = onClick
             ),
     ) {
+        if (isDraggingOnMe) {
+            DelayedTooltipPopup(
+                {},
+                myStringResource(Res.string.move_to_this_category),
+            )
+        }
         Row(
             modifier = Modifier
                 .padding(start = 24.dp)
@@ -125,6 +126,24 @@ private fun CategoryFilterItem(
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                     fontSize = myTextSizes.base
                 )
+                AnimatedVisibility(
+                    visible = shouldShowDragIcon,
+                ) {
+                    MyIcon(
+                        MyIcons.grip,
+                        null,
+                        Modifier
+                            .draggableHandle()
+                            .size(16.dp)
+                            .alpha(
+                                if (isDragging) {
+                                    1f
+                                } else {
+                                    0.5f
+                                }
+                            )
+                    )
+                }
             }
         }
         AnimatedVisibility(
@@ -159,6 +178,8 @@ fun StatusFilterItem(
     currentStatusCategoryFilter: DownloadStatusCategoryFilter?,
     statusFilter: DownloadStatusCategoryFilter,
     categories: List<Category>,
+    onCategoryReorderRequest: (index: Int, delta: Int) -> Unit,
+    onItemsDroppedInCategory: (category: Category, downloadIds: List<Long>) -> Unit,
     onFilterChange: (
         typeFilter: Category?,
     ) -> Unit,
@@ -203,7 +224,7 @@ fun StatusFilterItem(
                         MyIcon(
                             statusFilter.icon,
                             null,
-                            Modifier.size(16.dp)
+                            Modifier.size(mySpacings.iconSize)
                         )
                         Spacer(Modifier.width(4.dp))
                         Text(
@@ -216,17 +237,15 @@ fun StatusFilterItem(
                         )
                         MyIcon(
                             MyIcons.up, null, Modifier
-                            .fillMaxHeight().wrapContentHeight()
-                            .clip(CircleShape)
-                            .size(24.dp)
-                            .clickable {
-                                onRequestExpand(!isExpanded)
-                            }
-                            .padding(6.dp)
-                            .width(16.dp)
-                            .let {
-                                it.rotate(if (isExpanded) 180f else 0f)
-                            })
+                                .fillMaxHeight().wrapContentHeight()
+                                .clip(CircleShape)
+                                .size(24.dp)
+                                .clickable {
+                                    onRequestExpand(!isExpanded)
+                                }
+                                .padding(6.dp)
+                                .width(16.dp)
+                                .rotate(if (isExpanded) 0f else 180f))
                     }
                 }
                 AnimatedVisibility(
@@ -253,23 +272,36 @@ fun StatusFilterItem(
             }
         },
         body = {
-            Column(Modifier) {
-                categories.forEach {
-                    CategoryFilterItem(
-                        modifier = Modifier.onClick(
-                            matcher = PointerMatcher.mouse(PointerButton.Secondary),
-                        ) {
-                            onRequestOpenOptionMenu(it)
-                        },
-                        category = it,
-                        isSelected = isStatusSelected && currentTypeCategoryFilter == it,
-                        onClick = {
-                            onFilterChange(it)
-                        }
-                    )
+            ReorderableColumn(
+                list = categories,
+                onSettle = { from, to ->
+                    onCategoryReorderRequest(from, to - from)
+                },
+            ) { index, category, isDragging ->
+                key(category.id) {
+                    ReorderableItem {
+                        CategoryFilterItem(
+                            modifier = Modifier
+                                .onClick(
+                                    matcher = PointerMatcher.mouse(PointerButton.Secondary),
+                                ) {
+                                    onRequestOpenOptionMenu(category)
+                                },
+                            category = category,
+                            isSelected = isStatusSelected && currentTypeCategoryFilter == category,
+                            onItemsDropped = {
+                                onItemsDroppedInCategory(category, it)
+                            },
+                            onClick = {
+                                onFilterChange(category)
+                            },
+                            isDragging = isDragging,
+                        )
+                    }
                     Spacer(Modifier.height(2.dp))
                 }
             }
         }
     )
 }
+

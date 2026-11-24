@@ -1,8 +1,23 @@
+
 plugins {
-    id(MyPlugins.kotlin)
+    id(MyPlugins.kotlinMultiplatform)
+    id(Plugins.Android.multiplatformLibrary)
 }
-dependencies {
-    implementation(project(":shared:utils"))
-    // for windows, we use registry
-    implementation(libs.jna.platform)
+kotlin {
+    jvm("desktop")
+    android {
+        compileSdk = libs.versions.androidCompileSdk.get().toInt()
+        namespace = "ir.amirab.util.startup"
+        minSdk = 26
+    }
+    sourceSets {
+        commonMain.dependencies {
+            implementation(project(":shared:utils"))
+        }
+        val desktopMain = getByName("desktopMain")
+        desktopMain.dependencies {
+            //    // for windows, we use registry
+            implementation(libs.jna.platform)
+        }
+    }
 }

@@ -14,6 +14,801 @@
 
 ### Security
 
+## 1.11.4
+
+### Fixed
+
+- Fixed QR code rendering on dark themes
+
+### Improved
+
+- Updated translations
+- Improved the speed of reading multiple QR codes
+
+## 1.11.3
+
+### Added
+
+- Added a Network section to the desktop settings page
+
+### Fixed
+
+- Fixed incorrect category icon names being saved to storage. If you notice any mismatched category icons, right-click
+  the category and select **Reset to Defaults**
+
+### Improved
+
+- Updated translations
+- Improved the QR Code scanner UI/UX on Android (#1516)
+- Improved QR Code sharing, allowing users to share multiple download credentials across multiple QR Codes (#1520)
+
+## 1.11.2
+
+### Added
+
+- Add download location to the desktop download list table (disabled by default) (#1483)
+- Add an option to disable the `Add`/`Download` button while download link information is loading (#1508)
+- Add Start Queue, Stop Queue, and Stop All actions to the system tray
+- Add QR code support for sharing and scanning download links (#1511)
+
+### Fixed
+
+- Prevent download progress windows from being brought to the front when retrying a failed download (#1482)
+- Enforce API key authentication for specific routes (#1512)
+
+### Improved
+
+- Update translations
+
+## 1.11.1
+
+### Fixed
+
+- Directory picker crash on Linux (#1479)
+- Idle detection not working properly on Linux (#1479)
+
+### Improved
+
+- Updated translations
+- Minor improvements to the desktop settings UI
+
+## 1.11.0
+
+### Added
+
+- Show the selected item count and total content size in the desktop download list (#1445)
+- Add start and finish dates to the desktop download list (#1447)
+- Add an **Open With** option to the download menu and Download Complete dialog (long-press the **Open** button) (#1465)
+- Add an option to limit download speed while using other apps (#1466)
+- Add an option to configure the minimum download part size (#1467)
+- Add a speed limiter toggle to the system tray (#1458)
+
+### Fixed
+
+- Fix launching the app through browser integration on macOS (#1434)
+- Set window titles when creating windows (#1432)
+- Fix flickering when the NSIS installer closes the app on Windows (#1471)
+
+### Improved
+
+- Update translations
+- UI/UX improvements
+
+## 1.10.4
+
+### Fixed
+
+- Fixed an issue where some settings, including UI Scale, were not saved properly (#1409)
+
+### Improved
+
+- Updated translations
+
+## 1.10.3
+
+### Added
+
+- Added an option to use the newly entered path on the Add Download page as the default download location (#1406)
+
+### Fixed
+
+- Restricted the integration server to local connections only (#1442)
+
+### Improved
+
+- Updated translations
+- Improved system tray icon sizing on Windows
+- Improved filename detection when extracting filenames from links (#1393)
+
+## 1.10.2
+
+### Added
+
+- Added built-in DNS-over-HTTPS (DoH) support (#1380)
+- Added native messaging manifests for additional browsers (#1366)
+- Added more browser integration installation links
+- Added "Import From Clipboard" to the system tray menu
+
+### Fixed
+
+- Fixed a `Win32Exception` that could occur when uninstalling native messaging from the CLI (#1345)
+
+### Updated
+
+- Updated translations
+- Updated the donation link
+
+## 1.10.1
+
+### Changed
+
+- Disabled the AOT Cache
+
+## 1.10.0
+
+### Added
+
+- Native Messaging support, allowing the browser to launch the app if it's not already running
+- Command-line interface (CLI)
+- Support for API key authentication (#1335)
+
+### Improved
+
+- Faster app startup using the AOT cache (#1333)
+- Updated translations
+- Improved the speed limiter behavior (#1315)
+
+## 1.9.2
+
+### Added
+
+- New Twilight theme (#1292)
+- Optional download completion notifications on Android (#1290)
+
+### Fixed
+
+- Fixed a crash on some older CPUs on Windows
+- Fixed oversized system tray icon on macOS
+
+### Improved
+
+- Updated translations
+- Prevented Android devices from sleeping while downloads are active (#1291)
+- Various UI and UX improvements
+
+## 1.9.1
+
+### Added
+
+- An option to customize notification sounds (#1259)
+
+### Fixed
+
+- Ongoing notification was laggy on Samsung One UI devices (#1269)
+
+### Improved
+
+- Updated Translations
+- Minor UI/UX improvements
+
+## 1.9.0
+
+### Added
+
+- Czech language support
+- User-friendly error messages for download errors (#1252)
+- An option to remember the last selected queue and quickly add downloads to it by long-clicking the `Add` button (
+  #1246)
+- An option to import/export downloads using JSON format
+- A `Download` button on the multi-download page for cases where users do not want to start downloads without queue
+  processing (#1247)
+- The app now includes a logger that can be enabled using a command-line flag (#1226)
+- Startup errors are now logged automatically to help diagnose initialization issues
+
+### Changed
+
+- The default unqueued "Max Concurrent Downloads" value has been changed from "Unlimited" to 3 (This can be customized
+  in the app settings)
+
+### Improved
+
+- Updated translations
+- Added an indicator on the Android main page when resume is not supported (#1248)
+- Extract the file name from the download link as a fallback when no response information is available (#1209)
+- Minor UI/UX improvements
+
+## 1.8.8
+
+### Added
+
+- Reordering categories (#1119)
+
+### Changed
+
+- Quit Shortcut changed from `Ctrl-W` to `Ctrl-Q`
+
+### Fixed
+
+- Show part info not showing automatically if it was previously shown (#1183)
+- "Edit Saved Checksum" now correctly updated on the Checksum page on Android
+- the Main window correctly remembers its maximized state (#1185)
+- System tray now uses the native UI on Linux (arm64)
+- Other UI/UX improvements
+
+### Improved
+
+- Updated translations
+- Minor UI improvements
+
+## 1.8.7
+
+### Added
+
+- Ability to change the storage root when selecting the download location on Android (e.g., save to SD card) (#1101)
+- Option to choose the render API on Desktop (#1103)
+
+### Changed
+
+- Default render API set to `SOFTWARE` on Linux
+
+### Improved
+
+- Updated translations
+- Increment/decrement buttons in number fields are now more accessible (#1104)
+- Minor UI improvements
+
+## 1.8.6
+
+### Added
+
+- Linux ARM support (#1081)
+- An option to set max concurrent downloads for manually resumed downloads (#1085)
+
+### Fixed
+
+- Do not reset the download if storage is not mounted yet (#1087)
+- Error when assembling HLS media if destination folder was not created yet (#1089)
+- Do not reset the download if server changes status code from 206 to 200 (#1088)
+
+### Improved
+
+- Updated translations
+- Queue logic improvements (#1086)
+- Linux Installation Script updated to support ARM devices (#1090)
+
+## 1.8.5
+
+### Added
+
+- Windows ARM support (#1055)
+- In-app browser bookmark feature on Android (#1072)
+- In-app browser can be added to the launcher (App Menu)
+- In-app browser can be used as the default browser
+
+### Fixed
+
+- System tray crash on some Linux environments (#1060)
+- Black screen issue on some Linux environments (#1066)
+- Notification sound playing even when notification sounds are muted on Android (#1064)
+
+### Improved
+
+- Updated translations
+- In-app browser UI/UX improvements on Android
+- System tray now uses native UI on Windows (#1060)
+- Use a default User-Agent when no value is provided by the user (#1071)
+- Small UI improvements
+
+## 1.8.4
+
+### Added
+
+- In-app browser for Android
+- The Android service now tells the user why it is running
+- The Add-Multi-Download page can now filter downloads using search and wildcards
+
+### Fixed
+
+- Random app crashes on some Android devices caused by service-related issues
+- Issues with the in-app update feature on some Android devices
+
+### Improved
+
+- Updated translations
+- The Android Foreground Service is now only used when necessary (active downloads, active queues, scheduled queues) and
+  automatically stops after inactivity
+- Add-Multi-Download page UI/UX improvements
+
+## 1.8.3
+
+### Added
+
+- Ability to sort and remove queue items on Android (#996)
+- A new shortcut to open the download list from the download progress dialog (#1001)
+
+### Fixed
+
+- Download table state not saved properly on desktop (#999)
+- Update related notifications appearing repeatedly on android (#998)
+
+### Improved
+
+- Updated translations
+- Settings Page UI improvements on android (#990)
+
+## 1.8.2
+
+### Fixed
+
+- Resolved issues with the In-App update feature on some android devices
+- Disabled notification badges on the launcher icon on android
+- The application crashes on some devices (desktops) because of an issue in system theme detection logic
+
+### Improved
+
+- Updated translations
+- Added tooltips for action buttons
+- Display selected count in the "Add Multi Download" page on desktop (#970)
+- Reduced battery consumption
+- Various UI/UX enhancements
+
+## 1.8.1
+
+### Fixed
+
+- Android 10 storage access issue that caused download errors (#977)
+
+### Improved
+
+- Updated translations
+- Better support for adaptive icons on Android (#978)
+- Improved directory picker on Android (#979)
+- Slightly reduced application size
+
+## 1.8.0
+
+### Added
+
+- Android Support
+- macOS users can now use homebrew to install/update the application
+
+### Fixed
+
+- Some HLS streams are not recognized properly
+
+### Improved
+
+- Updated translations
+- UI improvements
+
+## 1.7.1
+
+### Added
+
+- Support for custom data directory (#895)
+
+### Fixed
+
+- System shortcuts not working on the main page (#885)
+- Segment info display issues
+- Suggested file names from browsers are now automatically corrected before use (#896)
+
+### Improved
+
+- Translations updated
+- Download list UI improvements (#897)
+- Extra icon sizes added to the Windows `.ico` file
+
+## 1.7.0
+
+### Added
+
+- Support for downloading media files: audio, video, non encrypted HLS streams from the browser (browser extension needs
+  to be updated)
+- Option to customize each item individually in the “Add Multiple Downloads” page (by right-clicking on each item) (
+  #866)
+- “Download Page” and “Custom User-Agent” options are now available in the “Add Download” > "Configs" dialog
+- Ability to remove recently used save locations (#873)
+
+### Changed
+
+- Browser integration API updated; updating the browser extension is required to support new features
+
+### Improved
+
+- Updated translations
+- The download creation time is now set to when the “Add Download” dialog is opened (#846)
+
+## 1.6.14
+
+### Fixed
+
+- An issue causing slow download speeds on some websites
+
+### Improved
+
+- Updated translations
+- Download Engine improvements
+- Minor UI improvements
+
+## 1.6.13
+
+### Fixed
+
+- **Access Denied** error could sometimes happen when adding a list of downloads (#826)
+
+### Improved
+
+- Updated translations
+- Download engine improvements (#828)
+- **Customize Table Columns** popup now supports drag to reorder (#830)
+
+## 1.6.12
+
+### Added
+
+- **Per Host Settings** — save username, password, thread count, user-agent, and more for specific hosts (#820)
+- Support for using **Move** action by holding **Shift** during drag & drop (#821)
+
+### Changed
+
+- UI scale is now relative to the system scale instead of using a fixed value (#814)
+
+### Fixed
+
+- Encoding issue with the default download folder on Linux (#810)
+
+### Improved
+
+- Updated translations
+- Enhanced multi-display support (#814)
+- Main window now remembers its maximized state (#815)
+
+## 1.6.11
+
+### Added
+
+- Option to change the download size unit (#804)
+
+### Fixed
+
+- "Permission denied" error when starting a new download (#795)
+
+### Improved
+
+- Updated translations
+- Improved settings page (#805)
+- Automatically fix illegal characters in server-provided filenames (#781)
+- Better handling of filenames received from the server (#780)
+- Use the OS default download location on first launch (#789)
+
+## 1.6.10
+
+### Added
+
+- New Black theme (#767)
+
+### Fixed
+
+- Restored missing executable permissions for files inside archives (macOS & Linux) (#765)
+- Eliminated flickering on the "New Update" page (#770)
+
+### Improved
+
+- Updated translations
+- Hovering between menus now works without closing the open one (#766)
+- Better item selection and new keyboard shortcuts on the queue items page (#769)
+- Small UI improvements
+
+## 1.6.9
+
+### Fixed
+
+- "Keep System Awake" was not properly cancelled on Windows (#755)
+- "Create Desktop Entry" had issue if the path contains spaces on Linux (#733)
+- Application crash on systems that have invalid font names (#737)
+- Some settings statuses were not updating correctly (#732)
+- "Download Dialog" position shifted when multiple dialogs were open simultaneously (#758)
+- "Add Download Dialog" position shifted when multiple dialogs were open simultaneously (#761)
+
+### Improved
+
+- Translations updated
+- Better handling of filenames received from the server (#759)
+
+## 1.6.8
+
+### Fixed
+
+- Can't change Auto Shutdown option if it was enabled
+
+## 1.6.7
+
+### Added
+
+- Lithuanian language support
+- Kurdish (Sorani) language support
+- Option to automatically shut down the system when downloads or queues complete (#726)
+- Option to delete partial files on download cancellation (#724)
+
+### Changed
+
+- App icon is now hidden from the Dock at runtime on macOS when the system tray is used (#710)
+- Default max download retry count changed to 3
+
+### Fixed
+
+- Removable storages are no longer monitored on Windows (#705)
+
+### Improved
+
+- Translations updated
+- System stays awake while downloads are in progress (#725)
+- Confirm dialogs and buttons now have better focus behavior
+- Dropdowns are now searchable (#706)
+- IO Operations improvements
+
+## 1.6.6
+
+### Added
+
+- Option to create desktop entry on Linux (#698)
+
+### Changed
+
+- Renamed Linux desktop and autostart files for better compatibility (#699)
+
+### Fixed
+
+- Removed duplicate UI Scale option in the Settings (#697)
+
+### Improved
+
+- Updated translations
+- Pressing "Stop All" now closes all active download windows (#700)
+
+## 1.6.5
+
+### Added
+
+- New themes (Deep Ocean, new Dark, new Light)
+- Category accepted file types are now optional (#690)
+- Option to change the app font (#692)
+- Option to switch between relative and absolute date/time formats (#694)
+- Option to clear all items in the queue at once
+
+### Changed
+
+- Renamed the previous Dark theme to **Obsidian**
+- Renamed the previous Light theme to **Light Gray**
+
+### Fixed
+
+- Issue where the app wouldn’t start for some Windows users (#695)
+
+### Improved
+
+- Updated translations
+- General UI Improvements
+- Automatically scroll to new downloads on the main page (#672)
+- Improved path validation for new downloads (#693)
+
+## 1.6.4
+
+### Added
+
+- Queues are now visible on the home page, next to the categories (#661)
+- In-app update is now supported on macOS (#627)
+- New option to enable the native menu bar on macOS (#646)
+
+### Fixed
+
+- macOS: Window now activates properly when "Show Downloads" is clicked from the system tray (#632)
+- Linux: Startup desktop entry now includes an icon (#634)
+- An issue where the "Edit Download" page could unintentionally change the download status (#641)
+- Queue status not updated properly sometimes (#663)
+
+### Improved
+
+- Translations updated
+- Minor UI improvements
+
+## 1.6.3
+
+### Added
+
+- Korean Language
+- An option to append ".part" extension to incomplete downloads (disabled by default)
+
+### Fixed
+
+- Prevent freeze when opening a file or folder
+- Some websites close the connection if we ask for resume support
+- Some non-standard links not captured correctly
+- Crash when opening browser integration links on macOS
+- Multiselect with Meta key not working as expected on macOS
+- Multiselect not stopped properly after window focus lost
+
+### Improved
+
+- Translations updated
+- Minor UI/UX improvements
+
+## 1.6.2
+
+### Added
+
+- Thai Language
+
+### Fixed
+
+- System Tray crashes sometimes in Linux
+- Icons not rendered properly sometimes in Linux
+- System Tray icon color in macOS
+- Quit handler in macOS
+
+### Improved
+
+- Translations updated
+- Respect user defined position of system buttons in Linux
+
+## 1.6.1
+
+### Fixed
+
+- Application shortcut in Windows have no icon
+
+### Improved
+
+- Translations updated
+
+## 1.6.0
+
+### Added
+
+- macOS support
+- Polish Language
+- Hungarian Language
+- Luri Bakhtiari Language
+- Silent Download option in the Browser Integration
+- Donate button in the app to support the project
+
+### Fixed
+
+- Overriding an existing download sometimes didn't work as expected.
+- "Start Queue" checkbox sometimes did not work as expected.
+
+### Improved
+
+- Translations updated
+- Custom Window decorations
+- Window dragging on Linux is now handled by the OS
+- Each platform now uses its own system button style
+- JVM updated to version 21
+
+## 1.5.8
+
+### Added
+
+- An option to allow update existing download from "Add Download" page if a duplicate is detected
+
+### Fixed
+
+- Crash when opening "Items" section of "Queues" page
+
+### Improved
+
+- Translations updated
+- Duplicate download detection
+- Minor UI/UX improvements
+
+## 1.5.7
+
+### Added
+
+- Drag and Drop files to other categories or external applications
+
+### Fixed
+
+- "Parts Info" section in the "Download Progress" window does not expand for the first time
+
+### Improved
+
+- Translations Updated
+- Improved UI rendering on Windows, resulting in higher FPS.
+- Minor UI/UX Improvements
+
+## 1.5.6
+
+### Added
+
+- Finnish Language Support
+- An option to make the start time of queues optional
+- An ability to edit saved checksums on the "File Checksum Checker" page'
+
+### Changed
+
+- The "Close" button in the "Download Progress" window has been renamed to "Cancel" (this stops the download and closes
+  the window). To close the window without stopping the download, use the "X" button.
+
+### Fixed
+
+- An issue where filenames in email attachments were not captured correctly
+- The updater wouldn't resume after the download was stopped
+- "Open Folder" doesn’t work properly on Linux when the file name contains special characters.
+- Changing settings in the 'Download Progress' window also affects other download items!
+
+### Improved
+
+- Translations updated
+- "Download Progress" and "Queues" windows UI improvements
+- Pressing "Download Browser Integration" the download page will be opened in the corresponding browser
+
+## 1.5.5
+
+### Added
+
+- Japanese Language
+- An option to automatically "Retry Failed Downloads" (Disabled by default for now)
+- An option to Import/Export download credentials as curl command
+
+### Fixed
+
+- The download progress sometimes shows incorrect speeds and ETAs
+- Some unverified hostnames can't be used when the "Ignore SSL Certificate" is enabled
+- Startup on Boot issue in macOS
+- Drag And Drop of links issue in macOS
+- Some shortcuts didn't work properly in macOS
+- System Tray didn't work in macOS
+
+### Improved
+
+- Translations updated
+- Minor UI improvements
+- App Icon size in macOS
+- Override "About" dialog in macOS
+
+## 1.5.4
+
+### Added
+
+- The app now supports full portability by creating an empty `.abdm` directory in the installation folder.
+- An option to delete user data (configuration files) when using Windows Uninstaller.
+
+### Fixed
+
+- Unchecked "Use Category" didn't work as expected.
+
+### Improved
+
+- Download engine improvements.
+- Translation updated.
+
+## 1.5.3
+
+### Added
+
+- Vietnamese language.
+- An option to "Select Queue" dialog to start the queue immediately.
+- An option to allow user set custom User-agent in the settings.
+- An option to not "Use Category" by default.
+- An option to disable SSL Certificate Verification.
+- An option to show/hide icon labels in the main toolbar (you can hover over them to see their labels).
+- An option to not use System Tray.
+
+### Fixed
+
+- Sometimes Thread count not applied correctly.
+- The download completion dialog appeared even when its option is disabled.
+- Some servers return 256 Bytes instead of full size
+
+### Improved
+
+- Translations updated
+- Minor UI improvements
+- Use system language as default language
+- Proxy Settings page improved
+
 ## 1.5.2
 
 ### Added

@@ -16,19 +16,21 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                link:
-                  type: string
-                  description: The link to the download source
-                headers:
-                  type: object
-                  additionalProperties:
+              type: array
+              items:
+                type: object
+                properties:
+                  link:
                     type: string
-                  description: Optional headers for the request
-                downloadPage:
-                  type: string
-                  description: Optional download page URL
+                    description: The link to the download source
+                  headers:
+                    type: object
+                    additionalProperties:
+                      type: string
+                    description: Optional headers for the request
+                  downloadPage:
+                    type: string
+                    description: Optional download page URL
       responses:
         "200":
           description: Successfully added the download
@@ -90,6 +92,21 @@ paths:
                 queueId:
                   type: integer
                   description: Optional queue ID to associate the task with
+                categoryId:
+                  type: integer
+                  description: Optional category ID to put the task in
+                startDownload:
+                  type: boolean
+                  default: false
+                  description: >-
+                    Start the download right away. Without it the download is only added to
+                    the list (status "Added") and waits to be started.
+                startQueue:
+                  type: boolean
+                  default: false
+                  description: >-
+                    Start the queue given in queueId instead of the download itself (used
+                    only with queueId; takes precedence over startDownload).
       responses:
         "200":
           description: Successfully added the download task

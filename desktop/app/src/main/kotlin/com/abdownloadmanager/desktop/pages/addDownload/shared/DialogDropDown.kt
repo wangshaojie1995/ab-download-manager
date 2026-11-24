@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -21,18 +20,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.rememberDialogState
+import androidx.compose.ui.window.v2.WindowBoundsProvider
+import androidx.compose.ui.window.v2.WindowSizeProvider
+import androidx.compose.ui.window.v2.rememberDialogState
 import com.abdownloadmanager.desktop.window.custom.BaseOptionDialog
-import com.abdownloadmanager.shared.utils.ui.icon.MyIcons
-import com.abdownloadmanager.shared.utils.ui.theme.LocalUiScale
-import com.abdownloadmanager.shared.utils.ui.myColors
+import com.abdownloadmanager.shared.util.ui.icon.MyIcons
+import com.abdownloadmanager.shared.util.ui.theme.LocalUiScale
+import com.abdownloadmanager.shared.util.ui.myColors
 import ir.amirab.util.ifThen
 import com.abdownloadmanager.shared.ui.widget.Text
-import com.abdownloadmanager.shared.utils.div
+import com.abdownloadmanager.shared.util.div
 import com.abdownloadmanager.desktop.window.moveSafe
 import com.abdownloadmanager.resources.Res
-import com.abdownloadmanager.shared.utils.ui.WithContentAlpha
-import com.abdownloadmanager.shared.utils.ui.widget.MyIcon
+import com.abdownloadmanager.shared.util.ui.WithContentAlpha
+import com.abdownloadmanager.shared.util.ui.theme.myShapes
+import com.abdownloadmanager.shared.util.ui.widget.MyIcon
 import ir.amirab.util.compose.resources.myStringResource
 import ir.amirab.util.desktop.screen.applyUiScale
 import java.awt.MouseInfo
@@ -49,6 +51,7 @@ fun <T> DialogDropDown(
     onRequestCloseDropDown: () -> Unit,
     dropDownSize: DpSize = DpSize(220.dp, 250.dp),
     renderItem: @Composable (T) -> Unit,
+    renderEmpty: @Composable () -> Unit,
 ) {
     Column(modifier) {
         DropDownHeader(
@@ -64,6 +67,7 @@ fun <T> DialogDropDown(
                 possibleItems = possibleItems,
                 selectedItem = selectedItem,
                 onItemSelected = onItemSelected,
+                drawOnEmpty = renderEmpty,
                 renderItem = renderItem,
             )
         }
@@ -77,12 +81,17 @@ fun <T> DropDownContent(
     possibleItems: List<T>,
     selectedItem: T?,
     onItemSelected: (T) -> Unit,
+    drawOnEmpty: @Composable () -> Unit,
     renderItem: @Composable (T) -> Unit,
 ) {
     BaseOptionDialog(
         onCloseRequest = closeDialog,
         state = rememberDialogState(
-            size = dropDownSize.applyUiScale(LocalUiScale.current)
+            initialBoundsProvider = WindowBoundsProvider(
+                sizeProvider = WindowSizeProvider.Fixed(
+                    size = dropDownSize.applyUiScale(LocalUiScale.current)
+                )
+            ),
         ),
         resizeable = true,
         content = {
@@ -96,7 +105,7 @@ fun <T> DropDownContent(
                     }
                 )
             }
-            val shape = RoundedCornerShape(6.dp)
+            val shape = myShapes.defaultRounded
 
             Box(
                 Modifier
@@ -154,6 +163,11 @@ fun <T> DropDownContent(
                         }
                     }
                 }
+                if (possibleItems.isEmpty()) {
+                    Box(Modifier.padding().fillMaxSize()) {
+                        drawOnEmpty()
+                    }
+                }
                 AnimatedVisibility(
                     visible = listState.canScrollForward,
                     modifier = Modifier.matchParentSize(),
@@ -188,7 +202,7 @@ private fun <T> DropDownHeader(
 ) {
     val borderColor = myColors.onBackground / 0.1f
     val background = myColors.surface / 50
-    val shape = RoundedCornerShape(6.dp)
+    val shape = myShapes.defaultRounded
     Row(
         Modifier
             .height(IntrinsicSize.Max)

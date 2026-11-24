@@ -2,8 +2,8 @@ package com.abdownloadmanager.desktop.utils
 
 import androidx.compose.ui.awt.awtEventOrNull
 import androidx.compose.ui.input.key.KeyEvent
-import com.abdownloadmanager.shared.utils.PlatformKeyStroke
-import com.abdownloadmanager.shared.utils.ShortcutManager
+import com.abdownloadmanager.shared.util.PlatformKeyStroke
+import com.abdownloadmanager.shared.util.ShortcutManager
 import java.awt.Toolkit
 import java.awt.event.InputEvent
 import javax.swing.KeyStroke
@@ -21,11 +21,20 @@ class DesktopShortcutManager : ShortcutManager() {
             KeyStroke.getKeyStrokeForEvent(awtEvent)
         }.getOrNull()?.asPlatformKeyStroke()
     }
+
+    override fun getKeyStrokeFromKeyCode(keyCode: Int): PlatformKeyStroke? {
+        return runCatching {
+            KeyStroke.getKeyStroke(keyCode, 0)
+        }.getOrNull()?.asPlatformKeyStroke()
+    }
 }
 
 data class DesktopKeyStroke(
     val awtKeyStroke: KeyStroke,
 ) : PlatformKeyStroke {
+    override val keyCode: Int
+        get() = awtKeyStroke.keyCode
+
     override fun getModifiers(): List<String> {
         return KeyUtil.getModifiers(awtKeyStroke.modifiers)
     }
@@ -43,7 +52,7 @@ object KeyUtil {
     }
 
     fun getModifiers(modifiers: Int): List<String> {
-        return buildList<String> {
+        return buildList {
             if (modifiers and InputEvent.META_DOWN_MASK != 0) {
                 add(Toolkit.getProperty("AWT.meta", "Meta"))
             }

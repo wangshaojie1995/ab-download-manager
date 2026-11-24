@@ -1,39 +1,54 @@
 package com.abdownloadmanager.desktop.pages.home.sections
 
-import com.abdownloadmanager.shared.utils.DOUBLE_CLICK_DELAY
-import com.abdownloadmanager.shared.utils.ui.WithContentAlpha
-import com.abdownloadmanager.shared.utils.ui.myColors
+import com.abdownloadmanager.shared.util.DOUBLE_CLICK_DELAY
+import com.abdownloadmanager.shared.util.ui.WithContentAlpha
+import com.abdownloadmanager.shared.util.ui.myColors
 import com.abdownloadmanager.shared.ui.widget.CheckBox
 import com.abdownloadmanager.shared.ui.widget.Text
-import com.abdownloadmanager.shared.ui.widget.customtable.Table
-import com.abdownloadmanager.shared.ui.widget.customtable.styled.MyStyledTableHeader
-import com.abdownloadmanager.shared.ui.widget.menu.LocalMenuDisabledItemBehavior
-import com.abdownloadmanager.shared.ui.widget.menu.MenuDisabledItemBehavior
-import com.abdownloadmanager.shared.ui.widget.menu.ShowOptionsInDropDown
+import com.abdownloadmanager.shared.ui.widget.table.customtable.Table
+import com.abdownloadmanager.shared.ui.widget.table.customtable.styled.MyStyledTableHeader
+import com.abdownloadmanager.shared.ui.widget.menu.custom.LocalMenuDisabledItemBehavior
+import com.abdownloadmanager.shared.ui.widget.menu.custom.MenuDisabledItemBehavior
+import com.abdownloadmanager.shared.ui.widget.menu.custom.ShowOptionsInPopup
 import ir.amirab.util.compose.action.MenuItem
 import androidx.compose.foundation.*
+import androidx.compose.foundation.draganddrop.dragAndDropSource
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draganddrop.DragAndDropTransferAction
+import androidx.compose.ui.draganddrop.DragAndDropTransferData
+import androidx.compose.ui.draganddrop.DragAndDropTransferable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
-import com.abdownloadmanager.shared.ui.widget.customtable.*
+import com.abdownloadmanager.desktop.pages.home.DownloadItemTransferable
 import com.abdownloadmanager.resources.Res
-import com.abdownloadmanager.shared.utils.FileIconProvider
-import com.abdownloadmanager.shared.utils.category.CategoryManager
-import com.abdownloadmanager.shared.utils.category.rememberCategoryOf
+import com.abdownloadmanager.shared.ui.widget.table.customtable.CellSize
+import com.abdownloadmanager.shared.ui.widget.table.customtable.CustomCellRenderer
+import com.abdownloadmanager.shared.ui.widget.table.customtable.SortableCell
+import com.abdownloadmanager.shared.ui.widget.table.customtable.TableCell
+import com.abdownloadmanager.shared.ui.widget.table.customtable.TableState
+import com.abdownloadmanager.shared.util.FileIconProvider
+import com.abdownloadmanager.shared.util.category.CategoryManager
+import com.abdownloadmanager.shared.util.category.rememberCategoryOf
+import com.abdownloadmanager.shared.util.downloaderror.DownloadErrorReason
+import com.abdownloadmanager.shared.util.ui.theme.myShapes
 import ir.amirab.downloader.monitor.*
 import ir.amirab.util.compose.resources.myStringResource
 import ir.amirab.util.compose.StringSource
 import ir.amirab.util.compose.asStringSource
+import ir.amirab.util.desktop.isCtrlPressed
+import ir.amirab.util.desktop.isShiftPressed
+import ir.amirab.util.ifThen
 import kotlinx.coroutines.delay
+import kotlin.time.Duration.Companion.milliseconds
 
 
 class DownloadListContext(
@@ -69,8 +84,9 @@ fun DownloadList(
     lastSelectedId: Long?,
     fileIconProvider: FileIconProvider,
     categoryManager: CategoryManager,
+    lazyListState: LazyListState,
+    failedDownloadReasons: Map<Long, DownloadErrorReason>,
 ) {
-    val state = rememberLazyListState()
     ShowDownloadOptions(
         downloadOptions, onRequestCloseOption
     )
@@ -83,8 +99,12 @@ fun DownloadList(
                 it in selectionList
             }
         }
-
     }
+
+    val listToBeDragged by rememberUpdatedState(
+        downloadList.filter { it.id in selectionList }
+    )
+
     val tableInteractionSource = remember { MutableInteractionSource() }
 
     fun newSelection(ids: List<Long>, isSelected: Boolean) {
@@ -95,8 +115,7 @@ fun DownloadList(
         newSelection(downloadList.map { it.id }, isSelected)
     }
 
-    var isCtrlPressed by remember { mutableStateOf(false) }
-    var isShiftPressed by remember { mutableStateOf(false) }
+    val windowInfo = LocalWindowInfo.current
     CompositionLocalProvider(
         LocalDownloadListContext provides DownloadListContext(
             onNewSelection,
@@ -107,19 +126,12 @@ fun DownloadList(
         val itemHorizontalPadding = 16.dp
         Table(
             tableState = tableState,
-            state = state,
+            listState = lazyListState,
             key = { it.id },
             list = downloadList,
             modifier = modifier
                 .onKeyEvent {
-                    val ctrlPressed = it.isCtrlPressed
-                    val shiftPressed = it.isShiftPressed
-                    isCtrlPressed = ctrlPressed
-                    isShiftPressed = shiftPressed
-                    false
-                }
-                .onKeyEvent {
-                    if (isCtrlPressed && it.key == Key.A) {
+                    if (it.key == Key.A && isCtrlPressed(windowInfo)) {
                         changeAllSelection(true)
                         true
                     } else {
@@ -156,7 +168,7 @@ fun DownloadList(
                     mutableStateOf(false)
                 }
                 LaunchedEffect(shouldWaitForSecondClick) {
-                    delay(DOUBLE_CLICK_DELAY)
+                    delay(DOUBLE_CLICK_DELAY.milliseconds)
                     if (shouldWaitForSecondClick) {
                         shouldWaitForSecondClick = false
                     }
@@ -168,11 +180,37 @@ fun DownloadList(
                         item,
                     )
                 ) {
+                    val windowInfo = LocalWindowInfo.current
                     WithContentAlpha(1f) {
-                        val shape = RoundedCornerShape(6.dp)
+                        val shape = myShapes.defaultRounded
                         Box(
                             Modifier
                                 .widthIn(min = getTableSize().visibleWidth)
+                                .ifThen(isSelected) {
+                                    dragAndDropSource(
+                                        drawDragDecoration = {},
+                                        transferData = {
+                                            val selectedDownloads = listToBeDragged
+                                            if (selectedDownloads.isEmpty() || !isSelected) {
+                                                return@dragAndDropSource null
+                                            }
+                                            val shiftPressed = isShiftPressed(windowInfo)
+                                            val supportedActions = listOf(
+                                                if (shiftPressed) {
+                                                    DragAndDropTransferAction.Move
+                                                } else {
+                                                    DragAndDropTransferAction.Copy
+                                                }
+                                            )
+                                            DragAndDropTransferData(
+                                                transferable = DragAndDropTransferable(
+                                                    DownloadItemTransferable(selectedDownloads)
+                                                ),
+                                                supportedActions = supportedActions,
+                                            )
+                                        }
+                                    )
+                                }
                                 .onClick(
                                     interactionSource = itemInteractionSource
                                 ) {
@@ -180,7 +218,7 @@ fun DownloadList(
                                         onRequestOpenDownload(item.id)
                                         shouldWaitForSecondClick = false
                                     } else {
-                                        if (isCtrlPressed) {
+                                        if (isCtrlPressed(windowInfo)) {
                                             onItemSelectionChange(item.id, !isSelected)
                                         } else {
                                             changeAllSelection(false)
@@ -219,6 +257,9 @@ fun DownloadList(
                                     indication = LocalIndication.current
                                 )
                                 .hoverable(itemInteractionSource)
+                                .focusable(
+                                    interactionSource = itemInteractionSource
+                                )
                                 .let {
                                     if (isSelected) {
                                         val selectionColor = myColors.onBackground
@@ -266,6 +307,14 @@ fun DownloadList(
                     DateAddedCell(item)
                 }
 
+                DownloadListCells.DateStarted -> {
+                    DateStartedCell(item)
+                }
+
+                DownloadListCells.DateFinished -> {
+                    DateFinishedCell(item)
+                }
+
                 DownloadListCells.Size -> {
                     SizeCell(item)
                 }
@@ -275,11 +324,16 @@ fun DownloadList(
                 }
 
                 DownloadListCells.Status -> {
-                    StatusCell(item)
+                    val reason = failedDownloadReasons[item.id]
+                    StatusCell(item, reason)
                 }
 
                 DownloadListCells.TimeLeft -> {
                     TimeLeftCell(item)
+                }
+
+                DownloadListCells.Location -> {
+                    LocationCell(item)
                 }
             }
         }
@@ -368,6 +422,55 @@ sealed interface DownloadListCells : TableCell<IDownloadItemState> {
         override val name: StringSource = Res.string.date_added.asStringSource()
         override val size: CellSize = CellSize.Resizeable(90.dp..150.dp, 100.dp)
     }
+
+    data object DateStarted : DownloadListCells,
+        SortableCell<IDownloadItemState> {
+        override fun comparator(): Comparator<IDownloadItemState> = compareBy { it.startTime }
+
+        override val id: String = "Date Started"
+        override val name: StringSource = Res.string.date_started.asStringSource()
+        override val size: CellSize = CellSize.Resizeable(90.dp..150.dp, 100.dp)
+    }
+
+    data object DateFinished : DownloadListCells,
+        SortableCell<IDownloadItemState> {
+        override fun comparator(): Comparator<IDownloadItemState> = compareBy { it.completeTime }
+
+        override val id: String = "Date Finished"
+        override val name: StringSource = Res.string.date_finished.asStringSource()
+        override val size: CellSize = CellSize.Resizeable(90.dp..150.dp, 100.dp)
+    }
+
+    data object Location : DownloadListCells,
+        SortableCell<IDownloadItemState> {
+        override fun comparator(): Comparator<IDownloadItemState> = compareBy { it.folder }
+
+        override val id: String = "Location"
+        override val name: StringSource = Res.string.location.asStringSource()
+        override val size: CellSize = CellSize.Resizeable(50.dp..1000.dp, 200.dp)
+    }
+
+    companion object {
+        val allCells: List<DownloadListCells> = listOf(
+            Check,
+            Name,
+            Size,
+            Status,
+            Speed,
+            TimeLeft,
+            DateAdded,
+            DateStarted,
+            DateFinished,
+            Location,
+        )
+        private val disabledByDefault = listOf(
+            DateStarted,
+            DateFinished,
+            Location,
+        )
+        val initiallyVisibleCells: List<DownloadListCells> = allCells
+            .filterNot { it in disabledByDefault }
+    }
 }
 
 @Composable
@@ -379,9 +482,7 @@ fun ShowDownloadOptions(
         CompositionLocalProvider(
             LocalMenuDisabledItemBehavior provides MenuDisabledItemBehavior.LowerOpacity
         ) {
-            ShowOptionsInDropDown(options, onDismiss)
+            ShowOptionsInPopup(options, onDismiss)
         }
     }
-
 }
-

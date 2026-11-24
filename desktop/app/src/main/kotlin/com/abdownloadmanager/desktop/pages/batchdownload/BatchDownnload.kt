@@ -2,10 +2,7 @@ package com.abdownloadmanager.desktop.pages.batchdownload
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.*
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,33 +10,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
 import androidx.compose.ui.unit.dp
 import com.abdownloadmanager.desktop.pages.batchdownload.WildcardSelect.*
-import com.abdownloadmanager.desktop.window.custom.WindowTitle
-import com.abdownloadmanager.shared.utils.ui.icon.MyIcons
+import com.abdownloadmanager.shared.util.ui.icon.MyIcons
 import com.abdownloadmanager.shared.ui.widget.*
-import com.abdownloadmanager.shared.utils.ui.myColors
-import com.abdownloadmanager.shared.utils.ui.theme.myTextSizes
-import ir.amirab.util.ifThen
-import com.abdownloadmanager.desktop.utils.ClipboardUtil
-import com.abdownloadmanager.shared.utils.div
+import com.abdownloadmanager.shared.util.ui.myColors
+import com.abdownloadmanager.shared.util.ClipboardUtil
 import com.abdownloadmanager.resources.Res
-import com.abdownloadmanager.shared.utils.ui.LocalContentColor
-import com.abdownloadmanager.shared.utils.ui.WithContentAlpha
-import com.abdownloadmanager.shared.utils.ui.widget.MyIcon
+import com.abdownloadmanager.shared.pages.batchdownload.BatchDownloadValidationResult
+import com.abdownloadmanager.shared.pages.batchdownload.WildcardLength
+import com.abdownloadmanager.shared.util.ui.LocalContentColor
+import com.abdownloadmanager.shared.util.ui.MultiplatformVerticalScrollbar
+import com.abdownloadmanager.shared.util.ui.theme.myShapes
 import ir.amirab.util.compose.resources.myStringResource
-import ir.amirab.util.compose.IconSource
 import ir.amirab.util.compose.StringSource
 import ir.amirab.util.compose.asStringSource
 
 @Composable
 fun BatchDownload(
-    component: BatchDownloadComponent,
+    component: DesktopBatchDownloadComponent,
 ) {
-    WindowTitle(myStringResource(Res.string.batch_download))
     val link by component.link.collectAsState()
     val setLink = component::setLink
     val start by component.start.collectAsState()
@@ -65,7 +55,7 @@ fun BatchDownload(
                         Text(myStringResource(Res.string.batch_download_link_help))
                     },
                     content = {
-                        BatchDownloadPageTextField(
+                        MyTextFieldWithIcons(
                             text = link,
                             onTextChange = setLink,
                             placeholder = "https://example.com/photo-*.png",
@@ -76,12 +66,12 @@ fun BatchDownload(
                                 MyTextFieldIcon(MyIcons.link)
                             },
                             end = {
-                                MyTextFieldIcon(MyIcons.paste, {
+                                MyTextFieldIcon(MyIcons.paste) {
                                     val v = ClipboardUtil.read()
                                     if (v != null) {
                                         setLink(v)
                                     }
-                                })
+                                }
                             },
                             errorText = when (val v = validationResult) {
                                 BatchDownloadValidationResult.URLInvalid -> {
@@ -94,6 +84,7 @@ fun BatchDownload(
                                         count = v.allowed.toString()
                                     )
                                 )
+
                                 BatchDownloadValidationResult.Others -> null
                                 BatchDownloadValidationResult.Ok -> null
                             }
@@ -109,7 +100,7 @@ fun BatchDownload(
                         Row(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            BatchDownloadPageTextField(
+                            MyTextFieldWithIcons(
                                 text = start,
                                 onTextChange = setStart,
                                 placeholder = "",
@@ -125,7 +116,7 @@ fun BatchDownload(
                             Text("...")
                             Spacer(Modifier.width(8.dp))
 
-                            BatchDownloadPageTextField(
+                            MyTextFieldWithIcons(
                                 text = end,
                                 onTextChange = setEnd,
                                 placeholder = "",
@@ -182,7 +173,7 @@ fun BatchDownload(
                     }
                 )
             }
-            VerticalScrollbar(scrollAdapter, Modifier.fillMaxHeight())
+            MultiplatformVerticalScrollbar(scrollAdapter, Modifier.fillMaxHeight())
         }
         Spacer(Modifier.height(8.dp))
         Row(
@@ -205,7 +196,7 @@ fun LinkPreview(link: String) {
         link,
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
+            .clip(myShapes.defaultRounded)
             .background(myColors.surface)
             .padding(vertical = 4.dp, horizontal = 6.dp)
     )
@@ -286,76 +277,4 @@ private fun LabeledContent(
         Spacer(Modifier.height(8.dp))
         content()
     }
-}
-
-
-@Composable
-private fun BatchDownloadPageTextField(
-    text: String,
-    onTextChange: (String) -> Unit,
-    placeholder: String,
-    modifier: Modifier,
-    errorText: String? = null,
-    start: @Composable() (() -> Unit)? = null,
-    end: @Composable() (() -> Unit)? = null,
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isFocused by interactionSource.collectIsFocusedAsState()
-    val dividerModifier = Modifier
-        .fillMaxHeight()
-        .padding(vertical = 1.dp)
-        //to not conflict with text-field border
-        .width(1.dp)
-        .background(if (isFocused) myColors.onBackground / 10 else Color.Transparent)
-    Column(modifier) {
-        MyTextField(
-            text,
-            onTextChange,
-            placeholder,
-            modifier = Modifier.fillMaxWidth(),
-            background = myColors.surface / 50,
-            interactionSource = interactionSource,
-            shape = RoundedCornerShape(6.dp),
-            start = start?.let {
-                {
-                    WithContentAlpha(0.5f) {
-                        it()
-                    }
-                    Spacer(dividerModifier)
-                }
-            },
-            end = end?.let {
-                {
-                    Spacer(dividerModifier)
-                    it()
-                }
-            }
-        )
-        AnimatedVisibility(errorText != null) {
-            if (errorText != null) {
-                Text(
-                    errorText,
-                    Modifier.padding(bottom = 4.dp, start = 4.dp),
-                    fontSize = myTextSizes.sm,
-                    color = myColors.error,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun MyTextFieldIcon(
-    icon: IconSource,
-    onClick: (() -> Unit)? = null,
-) {
-    MyIcon(icon, null, Modifier
-        .fillMaxHeight()
-        .ifThen(onClick != null) {
-            pointerHoverIcon(PointerIcon.Default)
-                .clickable { onClick?.invoke() }
-        }
-        .wrapContentHeight()
-        .padding(horizontal = 8.dp)
-        .size(16.dp))
 }

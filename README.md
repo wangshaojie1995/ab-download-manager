@@ -7,8 +7,8 @@
 <p align="center">
     <a href="https://github.com/amir1376/ab-download-manager/releases/latest"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/amir1376/ab-download-manager?color=greenlight&label=latest%20release"></a>
     <a href="https://abdownloadmanager.com"><img alt="AB Download Manager Website" src="https://img.shields.io/badge/project-website-purple?&labelColor=gray"></a>
-    <a href="https://t.me/abdownloadmanager_discussion"><img alt="Telegram Group" src="https://img.shields.io/badge/Telegram-Group-blue?logo=telegram&labelColor=gray"></a>
     <a href="https://t.me/abdownloadmanager"><img alt="Telegram Channel" src="https://img.shields.io/badge/Telegram-Channel-blue?logo=telegram&labelColor=gray"></a>
+    <a href="https://t.me/abdownloadmanager_discussion"><img alt="Telegram Group" src="https://img.shields.io/badge/Telegram-Group-blue?logo=telegram&labelColor=gray"></a>
     <a href="https://crowdin.com/project/ab-download-manager"><img alt="Crowdin" src="https://badges.crowdin.net/ab-download-manager/localized.svg"></a>
 </p>
 
@@ -16,37 +16,39 @@
     <img alt="AB Download Manager Banner" src="assets/banners/app_banner.png"/>
 </a>
 
+## Introduction
 
-## Description
-
-[AB Download Manager](https://abdownloadmanager.com) is a desktop app which lets you manage and organize your download files better than before
+[AB Download Manager](https://abdownloadmanager.com) is a desktop app that helps you manage and organize your downloads more efficiently than ever before.
 
 ## Features
 
 - ⚡️ Faster Download Speed
 - ⏰ Queues and Schedulers
 - 🌐 Browser Extensions
-- 💻 Multiplatform (Windows / Linux for now)
-- 🌙 Multiple Themes (Dark/Light) with modern UI
+- 💻 Multiplatform (Android / Windows / Linux / Mac)
+- 🌙 Multiple Themes (Dark/Light/Black and more) with modern UI
 - ❤️ Free and Open Source
 
-Please visit [Project Website](https://abdownloadmanager.com) for more info
+Please visit [Project Website](https://abdownloadmanager.com) for more info.
 
 ## Installation
 
-[Download Instructions](https://abdownloadmanager.com)
+<a href="https://github.com/amir1376/ab-download-manager/releases/latest"><img alt="GitHub Release" src="https://img.shields.io/github/v/release/amir1376/ab-download-manager?color=greenlight&label=latest%20release"></a>
 
-[GitHub Releases](https://github.com/amir1376/ab-download-manager/releases/latest)
+### Download and Install the App
 
-in order to download and install the app
+<a href="https://abdownloadmanager.com"><img src="https://img.shields.io/badge/Official%20Website-897BFF?logo=abdownloadmanager&logoColor=fff&style=flat-square" alt="Official Website" height="32" /></a>
+<a href="https://github.com/amir1376/ab-download-manager/releases/latest"><img src="https://img.shields.io/badge/GitHub%20Releases-2a2f36?logo=github&logoColor=fff&style=flat-square" alt="GitHub Releases" height="32" /></a>
 
-### installation script (Linux)
+#### Installation script (Linux)
+
+The recommended way to install the app on Linux
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/amir1376/ab-download-manager/master/scripts/install.sh)
 ```
 
-### winget or scoop (for Windows)
+#### Winget or Scoop (for Windows)
 
 **winget**:
 
@@ -60,13 +62,37 @@ winget install amir1376.ABDownloadManager
 scoop install extras/abdownloadmanager
 ```
 
-## Uninstall
-
-perform below command to uninstall
+#### Homebrew (for macOS & Linux)
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/amir1376/ab-download-manager/master/scripts/uninstall.sh)
+brew tap amir1376/tap && brew install --cask ab-download-manager
 ```
+
+> ⚠️ **Warning:** This software is NOT on Google Play or other app stores unless listed here. Any version **claiming to be or related to this project** should be considered SCAM and UNSAFE.
+
+For alternative installation methods, uninstallation instructions, and more details, please refer to the [wiki](https://github.com/amir1376/ab-download-manager/wiki/) page.
+
+### Browser Extensions
+
+<a href="https://addons.mozilla.org/en-US/firefox/addon/ab-download-manager/"><img src="https://img.shields.io/amo/v/ab-download-manager?label=Firefox&logo=firefoxbrowser" alt="Firefox Add-ons Version"></a>
+<a href="https://chromewebstore.google.com/detail/bbobopahenonfdgjgaleledndnnfhooj"> <img src="https://img.shields.io/chrome-web-store/v/bbobopahenonfdgjgaleledndnnfhooj?label=Chrome&logo=googlechrome" alt="Chrome Web Store Version"></a>
+
+You can download the browser extension to integrate the app with your browser.
+
+<p align="left">
+<a href="https://addons.mozilla.org/firefox/addon/ab-download-manager/">
+    <picture>
+        <img alt="Chrome Extension" src="./assets/banners/firefox-extension.png" height="48">
+    </picture>
+</a>
+<a href="https://chromewebstore.google.com/detail/bbobopahenonfdgjgaleledndnnfhooj">
+    <picture>
+        <source media="(prefers-color-scheme: dark)" srcset="./assets/banners/chrome-extension_dark.png" height="48">
+        <source media="(prefers-color-scheme: light)" srcset="./assets/banners/chrome-extension_light.png" height="48">
+        <img alt="Chrome Extension" src="./assets/banners/chrome-extension_light.png" height="48">
+    </picture>
+</a>
+</p>
 
 ## Screenshots
 
@@ -84,25 +110,15 @@ bash <(curl -fsSL https://raw.githubusercontent.com/amir1376/ab-download-manager
 </picture>
 </div>
 
-## Project Status & Feedback
-
-Please keep in mind that this project is in the beginning of its journey.
-**lots of features** are on the way!.
-
-**But**, in the meantime you may face **Bugs or Problems**. so.
-Please report them (by [Community chat](#community) or `GitHub Issues`) to me,And I'll do my best to fix them ASAP
-
 ## Community
 
-You can join to our [Telegram Group](https://t.me/abdownloadmanager_discussion) to
-
-- Report problems
-- Suggest features
-- Get help about the app
+- 📢 [Telegram Channel](https://t.me/abdownloadmanager) – News, announcements, and release updates.
+- 💬 [Telegram Group](https://t.me/abdownloadmanager_discussion) – Get help, report bugs, suggest features, and discuss
+  the project with the community.
 
 ## Repositories And Source Code
 
-There are multiple repositories related to the **AB Download Manager** project
+There are multiple repositories related to the **AB Download Manager** project:
 
 | Repository                                                                                 | Description                                                                   |
 |--------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------|
@@ -110,82 +126,54 @@ There are multiple repositories related to the **AB Download Manager** project
 | [Browser Integration](https://github.com/amir1376/ab-download-manager-browser-integration) | Contains the **Browser Extension** to be installed on your  **browser**       |
 | [Website](https://github.com/amir1376/ab-download-manager-website)                         | Contains the **AB Download Manager** [website](https://abdownloadmanager.com) |
 
-I spent a lot of time to create this project.
+I've spent a lot of time to create this project.
 
-If you like my work, Please consider giving it a ⭐ Thanks ❤️
+If you like my work, please consider giving it a ⭐ — thanks! ❤️
 
 ## Bug Report
 
-If you see bugs in the source code! please report them in the `GitHub Issues` section
+If you notice any bugs in the source code, please report them via the `GitHub Issues` section.
 
 ## Build From Source
 
-to compile and test desktop app on your local machine
-follow these steps.
+To compile and test the desktop app on your local machine,
+follow these steps:
 
-1. Clone the project
-2. Install the [JBR](https://github.com/JetBrains/JetBrainsRuntime/releases)
-   1. If you extract it to your home directory and don't want to modify global `JAVA_HOME` environment variable you can set `JAVA_HOME` to the extracted directory e.g. `export JAVA_HOME=~/jbrsdk_jcef-21.0.4-linux-x64-b620.4` for linux or `$env:JAVA_HOME="C:\path\to\jbr"` on Windows
-3. cd into the project, open your terminal and execute the following commands
-4. select which way you want to compile the app
-<details>
-<summary>Packaged (msi,deb at the moment)</summary>
+1. Clone the project.
+2. Download and extract the [JBR](https://github.com/JetBrains/JetBrainsRuntime/releases), and make it available by either:
+    
+    - Adding it to your `PATH`, or
+    - Setting the `JAVA_HOME` environment variable to its installation path.
+  
+3. Navigate to the project directory, open your terminal and execute the following command:
 
-```bash
-./gradlew
+    ```bash
+    ./gradlew createReleaseFolderForCi
+    ```
 
-./gradlew packageReleaseDistributionForCurrentOS
-```
+4. The output will be available at:
 
-This will create an installer package for your **current OS**, so you can install it on your own
-
->Note: you will get error if your OS does not support any of above package types in this case you should compile it `without packaging`
-
-</details>
-
-<details>
-<summary>Without Package</summary>
-
-In case you don't want to package it or your OS does not support those package types you can use this command to compile the app without packaging it
-```bash
-./gradlew
-
-./gradlew createReleaseDistributable
-```
-It will create an output folder
-
->NOTE: this is not packaged you may package it yourself manually, or just simply run it!
-
->I suggest you to move the output somewhere else if you want to run it directly
-
-</details>
-
-The output will be created in
-
-```
-<project_dir>/desktop/app/build/compose/binaries/main-release/
-```
-
+    ```
+    <project_dir>/build/ci-release
+    ```
 
 > **Note**. This project is compiled and published by GitHub actions [here](./.github/workflows/publish.yml), so if you
-> faced any problem you can check that too
+> faced any problem you can check that too.
 
 ## Translations
+
+<a href="https://crowdin.com/project/ab-download-manager"><img alt="Crowdin" src="https://badges.crowdin.net/ab-download-manager/localized.svg"></a>
 
 If you’d like to help translate AB Download Manager into another language, or improve existing translations, you can do
 so on Crowdin. Here’s how:
 
 - Visit the project in [Crowdin](https://crowdin.com/project/ab-download-manager)
 - Please DO NOT submit translations via pull requests.
-- If you want to add a new language, please see [here](https://github.com/amir1376/ab-download-manager/issues/144)
+- If you want to add a new language, please see [this](https://github.com/amir1376/ab-download-manager/issues/144).
 
 ## Contribution
 
-Contributions to this project are very welcome!
-
 If you want to contribute to this project, please read [Contributing Guide](CONTRIBUTING.md) first.
-
-Let's make a better Download Manager together ❤️
 
 ## Support the Project
 

@@ -4,13 +4,12 @@ import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import com.abdownloadmanager.desktop.window.custom.WindowIcon
-import com.abdownloadmanager.desktop.window.custom.WindowTitle
-import com.abdownloadmanager.shared.utils.ui.icon.MyIcons
-import com.abdownloadmanager.shared.utils.ui.myColors
-import com.abdownloadmanager.shared.utils.ui.theme.myTextSizes
+import com.abdownloadmanager.shared.util.ui.icon.MyIcons
+import com.abdownloadmanager.shared.util.ui.myColors
+import com.abdownloadmanager.shared.util.ui.theme.myTextSizes
 import com.abdownloadmanager.shared.ui.widget.ActionButton
-import com.abdownloadmanager.shared.utils.ui.WithContentAlpha
-import com.abdownloadmanager.shared.utils.div
+import com.abdownloadmanager.shared.util.ui.WithContentAlpha
+import com.abdownloadmanager.shared.util.div
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import com.abdownloadmanager.shared.ui.widget.Text
@@ -28,9 +27,11 @@ import androidx.compose.ui.unit.dp
 import com.abdownloadmanager.shared.ui.theme.myMarkdownColors
 import com.abdownloadmanager.shared.ui.theme.myMarkdownTypography
 import com.abdownloadmanager.resources.Res
+import com.abdownloadmanager.shared.util.ui.LocalMultiplatformScrollbarStyle
+import com.abdownloadmanager.shared.util.ui.MultiplatformVerticalScrollbar
 import io.github.z4kn4fein.semver.Version
 import com.abdownloadmanager.updatechecker.UpdateInfo
-import com.abdownloadmanager.shared.utils.ui.needScroll
+import com.abdownloadmanager.shared.util.ui.needScroll
 import com.mikepenz.markdown.compose.Markdown
 import ir.amirab.util.compose.resources.myStringResource
 
@@ -41,7 +42,6 @@ fun NewUpdatePage(
     update: () -> Unit,
     cancel: () -> Unit,
 ) {
-    WindowTitle(myStringResource(Res.string.update_updater))
     WindowIcon(MyIcons.refresh)
     val contentHorizontalPadding = 16.dp
     Box {
@@ -206,7 +206,7 @@ private fun RenderChangeLog(
     changeLog: String,
     horizontalPadding: Dp,
 ) {
-    val trimmedChangelog = remember {
+    val trimmedChangelog = remember(changeLog) {
         changeLog
             .lines()
             .filterNot { it.isBlank() }
@@ -266,16 +266,13 @@ private fun RenderChangeLog(
                     typography = myMarkdownTypography()
                 )
                 if (scrollbarAdapter.needScroll()) {
-                    VerticalScrollbar(
+                    MultiplatformVerticalScrollbar(
                         modifier = Modifier
                             .fillMaxHeight()
                             .padding(
                                 vertical = 4.dp,
                                 horizontal = 4.dp
                             ),
-                        style = LocalScrollbarStyle.current.copy(
-                            thickness = 6.dp
-                        ),
                         adapter = scrollbarAdapter
                     )
                 }

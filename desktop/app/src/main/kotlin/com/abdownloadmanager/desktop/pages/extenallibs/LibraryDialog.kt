@@ -1,16 +1,17 @@
 package com.abdownloadmanager.desktop.pages.extenallibs
 
-import com.abdownloadmanager.desktop.pages.about.MaybeLinkText
-import com.abdownloadmanager.shared.utils.ui.ProvideTextStyle
-import com.abdownloadmanager.shared.utils.ui.myColors
-import com.abdownloadmanager.shared.utils.ui.theme.myTextSizes
+import com.abdownloadmanager.shared.ui.widget.MaybeLinkText
+import com.abdownloadmanager.shared.util.ui.ProvideTextStyle
+import com.abdownloadmanager.shared.util.ui.myColors
+import com.abdownloadmanager.shared.util.ui.theme.myTextSizes
 import com.abdownloadmanager.shared.ui.widget.ActionButton
-import com.abdownloadmanager.shared.utils.ui.WithContentAlpha
-import com.abdownloadmanager.shared.utils.div
+import com.abdownloadmanager.shared.util.ui.WithContentAlpha
+import com.abdownloadmanager.shared.util.div
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import com.abdownloadmanager.shared.ui.widget.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.abdownloadmanager.resources.Res
+import com.abdownloadmanager.shared.util.ui.theme.myShapes
 import com.mikepenz.aboutlibraries.entity.Developer
 import com.mikepenz.aboutlibraries.entity.Library
 import com.mikepenz.aboutlibraries.entity.License
@@ -41,7 +43,7 @@ fun LibraryDialog(
         ProvideTextStyle(
             TextStyle(fontSize = myTextSizes.base)
         ) {
-            val shape = RoundedCornerShape(6.dp)
+            val shape = myShapes.defaultRounded
             Column(
                 Modifier
                     .clip(shape)
@@ -56,7 +58,11 @@ fun LibraryDialog(
                     )
                     .padding(16.dp)
             ) {
-                Column {
+                Column(
+                    Modifier
+                        .weight(1f, false)
+                        .verticalScroll(rememberScrollState())
+                ) {
                     LibraryNameAndVersion(library.name, library.artifactVersion, library.artifactId)
                     Spacer(Modifier.height(16.dp))
                     library.description?.let {
@@ -113,7 +119,7 @@ private fun LibraryDescription(description: String) {
 }
 
 @Composable
-private fun LibraryLicenseInfo(licenses: ImmutableSet<License>) {
+private fun LibraryLicenseInfo(licenses: Set<License>) {
     KeyValue(myStringResource(Res.string.license)) {
         val l = licenses.map {
             it.name.asStringSource() to it.url
@@ -139,9 +145,10 @@ private fun LibraryDevelopers(devs: List<Developer>) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ListOfNamesWithLinks(map: List<Pair<StringSource, String?>>) {
-    Row {
+    FlowRow {
         for ((i, v) in map.withIndex()) {
             val (name, link) = v
             MaybeLinkText(name.rememberString(), link)

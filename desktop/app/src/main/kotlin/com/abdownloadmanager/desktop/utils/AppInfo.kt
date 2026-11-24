@@ -1,9 +1,18 @@
 package com.abdownloadmanager.desktop.utils
 
 import com.abdownloadmanager.desktop.AppArguments
-import com.abdownloadmanager.desktop.SharedConstants
+import com.abdownloadmanager.desktop.storage.DesktopDefinedPaths
+import com.abdownloadmanager.shared.util.AppVersion
+import com.abdownloadmanager.shared.util.SharedConstants
 import ir.amirab.util.platform.Platform
+import okio.Path.Companion.toOkioPath
 import java.io.File
+
+object FileNameConstants {
+    const val mainApp = "ABDownloadManager"
+    const val cliApp = "ABDownloadManagerCli"
+    const val nativeMessagingHost = "ABDownloadManagerNativeMessagingHost"
+}
 
 object AppInfo {
     val name = SharedConstants.appName
@@ -16,28 +25,65 @@ object AppInfo {
 
     val version = AppVersion.get()
     val platform = Platform.getCurrentPlatform()
-    val exeFile: String? = run {
-//        if (!AppProperties.isAppInstalled()){
-//            return@run null
-//        }
+
+    val currentExecutable: String? = run {
         System.getProperty("jpackage.app-path")
     }
+
+    fun calcExecutable(nameWithoutExtension: String): String? {
+        return currentExecutable?.let {
+            val file = File(it)
+            val extension = file.extension
+            val targetFileName = buildString(file.name.length) {
+                append(nameWithoutExtension)
+                if (extension.isNotEmpty()) {
+                    append(".")
+                    append(extension)
+                }
+            }
+            file.parentFile.resolve(targetFileName).path
+        }
+    }
+
+    val mainExeFile: String? = run {
+        calcExecutable(FileNameConstants.mainApp)
+    }
+    val cliExeFile: String? = run {
+        calcExecutable(FileNameConstants.cliApp)
+    }
+    val nativeMessagingExeFile: String? = run {
+        calcExecutable(FileNameConstants.nativeMessagingHost)
+    }
+
+    private fun File.findAppFolder() = generateSequence(this) { it.parentFile }
+        .firstOrNull { it.name.endsWith(".app") }
+
     val installationFolder: String? = run {
-        exeFile?.let(::File)
+        mainExeFile?.let(::File)
             ?.parentFile // executable path
             ?.let {
                 when (Platform.getCurrentPlatform()) {
                     Platform.Desktop.Linux -> it.parentFile // <installationFolder>/bin/ABDownloadManager
-                    Platform.Desktop.MacOS -> it.parentFile // not checked yet
+                    Platform.Desktop.MacOS -> it.findAppFolder() // /Applications/ABDownloadManager.app
                     Platform.Desktop.Windows -> it // <installationFolder>/ABDownloadManager.exe
                     else -> null
                 }?.path
             }
     }
+
+    private fun getUserDataDir(): File {
+        val dataDirName = SharedConstants.dataDirName
+        return File(System.getProperty("user.home"), dataDirName)
+    }
+
+    val dataDir by lazy {
+        PortableUtil.getPortableDataDir(installationFolder) ?: getUserDataDir()
+    }
+    val definedPaths = DesktopDefinedPaths(dataDir.toOkioPath())
 }
 
 fun AppInfo.isAppInstalled(): Boolean {
-    return AppInfo.exeFile != null
+    return AppInfo.currentExecutable != null
 }
 
 fun AppInfo.isInIDE(): Boolean {
@@ -46,14 +92,4 @@ fun AppInfo.isInIDE(): Boolean {
 
 fun AppInfo.isInDebugMode(): Boolean {
     return AppArguments.get().debug || AppProperties.isDebugMode() || isInIDE()
-}
-
-val AppInfo.configDir: File get() = File(AppProperties.getConfigDirectory())
-val AppInfo.systemDir: File get() = File(AppProperties.getSystemDirectory())
-val AppInfo.updateDir: File get() = AppInfo.systemDir.resolve("update")
-val AppInfo.logDir: File get() = AppInfo.systemDir.resolve("log")
-val AppInfo.optionsDir: File get() = AppInfo.configDir.resolve("options")
-val AppInfo.downloadDbDir: File get() = AppInfo.configDir.resolve("download_db")
-fun AppInfo.extensions() {
-
 }

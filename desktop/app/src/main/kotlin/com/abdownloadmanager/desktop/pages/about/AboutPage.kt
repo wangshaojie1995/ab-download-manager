@@ -1,15 +1,12 @@
 package com.abdownloadmanager.desktop.pages.about
 
 import androidx.compose.foundation.*
-import com.abdownloadmanager.shared.utils.ui.LocalTextStyle
-import com.abdownloadmanager.shared.utils.ui.icon.MyIcons
-import com.abdownloadmanager.shared.utils.ui.myColors
-import com.abdownloadmanager.shared.utils.ui.theme.myTextSizes
+import com.abdownloadmanager.shared.util.ui.icon.MyIcons
+import com.abdownloadmanager.shared.util.ui.myColors
+import com.abdownloadmanager.shared.util.ui.theme.myTextSizes
 import com.abdownloadmanager.shared.ui.widget.Text
 import com.abdownloadmanager.desktop.utils.AppInfo
-import com.abdownloadmanager.shared.utils.ui.WithContentAlpha
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import com.abdownloadmanager.shared.util.ui.WithContentAlpha
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,28 +15,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.input.pointer.PointerIcon
-import androidx.compose.ui.input.pointer.pointerHoverIcon
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.*
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.abdownloadmanager.desktop.SharedConstants
-import com.abdownloadmanager.shared.utils.ui.widget.MyIcon
-import ir.amirab.util.ifThen
+import com.abdownloadmanager.shared.util.SharedConstants
+import com.abdownloadmanager.shared.util.ui.widget.MyIcon
 import com.abdownloadmanager.shared.ui.widget.IconActionButton
 import com.abdownloadmanager.shared.ui.widget.Tooltip
-import com.abdownloadmanager.shared.utils.div
+import com.abdownloadmanager.shared.util.div
 import com.abdownloadmanager.resources.Res
-import ir.amirab.util.UrlUtils
+import com.abdownloadmanager.shared.ui.widget.ActionButton
+import com.abdownloadmanager.shared.ui.widget.LinkText
+import com.abdownloadmanager.shared.util.ui.LocalContentColor
+import com.abdownloadmanager.shared.util.ui.theme.myShapes
+import ir.amirab.util.URLOpener
+import ir.amirab.util.HttpUrlUtils
 import ir.amirab.util.compose.IconSource
 import ir.amirab.util.compose.StringSource
 import ir.amirab.util.compose.asStringSource
 import ir.amirab.util.compose.resources.myStringResource
-import java.net.URL
 
 @Composable
 fun AboutPage(
@@ -134,6 +129,8 @@ private fun RenderAppInfo(
                     myStringResource(Res.string.developed_with_love_for_you),
                 )
                 Spacer(Modifier.height(8.dp))
+                DonateButton()
+                Spacer(Modifier.height(8.dp))
                 Spacer(
                     Modifier
                         .fillMaxWidth()
@@ -143,9 +140,7 @@ private fun RenderAppInfo(
                 Spacer(Modifier.height(8.dp))
                 val websiteUrl = SharedConstants.projectWebsite
                 val websiteDisplayName = remember(websiteUrl) {
-                    kotlin.runCatching {
-                        URL(websiteUrl).host
-                    }.getOrNull() ?: websiteUrl
+                    HttpUrlUtils.getHost(websiteUrl) ?: websiteUrl
                 }
                 LinkText(
                     text = websiteDisplayName,
@@ -199,35 +194,35 @@ private fun SocialAndLinks(
             MyIcons.earth,
             Res.string.visit_the_project_website.asStringSource(),
             onClick = {
-                UrlUtils.openUrl(SharedConstants.projectWebsite)
+                URLOpener.openUrl(SharedConstants.projectWebsite)
             }
         )
         SocialSmallButton(
             MyIcons.openSource,
             Res.string.view_the_source_code.asStringSource(),
             onClick = {
-                UrlUtils.openUrl(SharedConstants.projectSourceCode)
+                URLOpener.openUrl(SharedConstants.projectSourceCode)
             }
         )
         SocialSmallButton(
             MyIcons.speaker,
             Res.string.channel.asStringSource(),
             onClick = {
-                UrlUtils.openUrl(SharedConstants.telegramChannelUrl)
+                URLOpener.openUrl(SharedConstants.telegramChannelUrl)
             }
         )
         SocialSmallButton(
             MyIcons.group,
             Res.string.group.asStringSource(),
             onClick = {
-                UrlUtils.openUrl(SharedConstants.telegramGroupUrl)
+                URLOpener.openUrl(SharedConstants.telegramGroupUrl)
             }
         )
         SocialSmallButton(
             MyIcons.language,
             Res.string.translators_contribute_title.asStringSource(),
             onClick = {
-                UrlUtils.openUrl(SharedConstants.projectTranslations)
+                URLOpener.openUrl(SharedConstants.projectTranslations)
             }
         )
     }
@@ -253,7 +248,7 @@ private fun CreditsSection(
             title = Res.string.this_is_a_free_and_open_source_software.asStringSource(),
             description = Res.string.view_the_source_code.asStringSource(),
             onClick = {
-                UrlUtils.openUrl(AppInfo.sourceCode)
+                URLOpener.openUrl(AppInfo.sourceCode)
             }
         )
         AboutPageListItemButton(
@@ -286,7 +281,7 @@ private fun SocialSmallButton(
     Tooltip(title) {
         IconActionButton(
             icon,
-            contentDescription = title.rememberString(),
+            contentDescription = title,
             onClick = onClick,
         )
     }
@@ -300,12 +295,12 @@ private fun AboutPageListItemButton(
     description: StringSource,
     onClick: () -> Unit,
 ) {
-    val shape = RoundedCornerShape(6.dp)
+    val shape = myShapes.defaultRounded
     Row(
         modifier
-            .clickable(onClick = onClick)
             .border(1.dp, myColors.onBackground / 0.15f, shape)
             .clip(shape)
+            .clickable(onClick = onClick)
             .background(myColors.surface / 0.5f)
             .padding(
                 horizontal = 8.dp,
@@ -379,82 +374,22 @@ private fun BoxScope.BackgroundEffects() {
     )
 }
 
-
 @Composable
-fun LinkText(
-    text: String,
-    link: String,
-    modifier: Modifier = Modifier,
-    maxLines: Int = Int.MAX_VALUE,
-    showExternalIndicator: Boolean = true,
-    overflow: TextOverflow = TextOverflow.Clip,
-) {
-    val handler = LocalUriHandler.current
-    val interactionSource = remember { MutableInteractionSource() }
-    val isHovered by interactionSource.collectIsHoveredAsState()
-    Row(
-        modifier
-            .pointerHoverIcon(PointerIcon.Hand)
-            .hoverable(interactionSource)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null
-            ) {
-                handler.openUri(link)
-            }
-    ) {
-        Text(
-            text = text,
-            style = LocalTextStyle.current
-                .merge(LinkStyle).ifThen(isHovered) {
-                    copy(
-                        textDecoration = TextDecoration.Underline
-                    )
-                },
-            overflow = overflow,
-            maxLines = maxLines,
-        )
-        if (showExternalIndicator) {
+private fun DonateButton() {
+    ActionButton(
+        backgroundColor = SolidColor(LocalContentColor.current / 0.05f),
+        start = {
             MyIcon(
-                MyIcons.externalLink,
+                MyIcons.hearth,
                 null,
-                Modifier.size(10.dp).alpha(
-                    if (isHovered) 0.75f
-                    else 0.5f
-                )
+                modifier = Modifier.size(16.dp),
+                tint = myColors.error,
             )
+            Spacer(Modifier.width(8.dp))
+        },
+        text = myStringResource(Res.string.donate),
+        onClick = {
+            URLOpener.openUrl(SharedConstants.donateLink)
         }
-    }
-}
-
-@Composable
-fun MaybeLinkText(
-    text: String,
-    link: String?,
-    modifier: Modifier = Modifier,
-    overflow: TextOverflow = TextOverflow.Clip,
-    maxLines: Int = Int.MAX_VALUE,
-) {
-    if (link == null) {
-        Text(
-            modifier = modifier,
-            text = text,
-            maxLines = maxLines,
-            overflow = overflow,
-        )
-    } else {
-        LinkText(
-            modifier = modifier,
-            text = text,
-            link = link,
-            maxLines = maxLines,
-            overflow = overflow
-        )
-    }
-}
-
-private val LinkStyle: TextStyle
-    @Composable
-    get() = TextStyle(
-        color = myColors.info,
     )
+}

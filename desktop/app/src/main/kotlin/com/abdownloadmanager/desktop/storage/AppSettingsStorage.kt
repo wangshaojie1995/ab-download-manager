@@ -2,132 +2,35 @@ package com.abdownloadmanager.desktop.storage
 
 import androidx.datastore.core.DataStore
 import arrow.optics.Lens
-import arrow.optics.optics
-import com.abdownloadmanager.shared.utils.ConfigBaseSettingsByMapConfig
-import ir.amirab.util.compose.localizationmanager.LanguageStorage
-import ir.amirab.util.config.*
-import kotlinx.serialization.Serializable
-import org.koin.core.component.KoinComponent
-import java.io.File
+import com.abdownloadmanager.shared.storage.SpeedLimitMode
+import com.abdownloadmanager.shared.storage.appsettings.AppSettingsModel
+import com.abdownloadmanager.shared.storage.appsettings.BaseAppSettingsStorage
+import com.abdownloadmanager.shared.storage.appsettings.PlatformAppSettingsModel
+import com.abdownloadmanager.shared.storage.appsettings.*
+import com.abdownloadmanager.shared.util.ConfigBaseSettingsByJson
+import com.abdownloadmanager.shared.util.ui.theme.DEFAULT_UI_SCALE
+import kotlinx.coroutines.flow.MutableStateFlow
 
-@optics
-@Serializable
-data class AppSettingsModel(
-    val theme: String = "dark",
-    val language: String? = null,
-    val uiScale: Float? = null,
-    val mergeTopBarWithTitleBar: Boolean = false,
-    val threadCount: Int = 8,
-    val dynamicPartCreation: Boolean = true,
-    val useServerLastModifiedTime: Boolean = false,
-    val useSparseFileAllocation: Boolean = true,
-    val useAverageSpeed: Boolean = true,
-    val showDownloadProgressDialog: Boolean = true,
-    val showDownloadCompletionDialog: Boolean = true,
-    val speedLimit: Long = 0,
-    val autoStartOnBoot: Boolean = true,
-    val notificationSound: Boolean = true,
-    val defaultDownloadFolder: String = File(System.getProperty("user.home"))
-        .resolve("Downloads/ABDM")
-        .canonicalFile.absolutePath,
-    val browserIntegrationEnabled: Boolean = true,
-    val browserIntegrationPort: Int = 15151,
-    val trackDeletedFilesOnDisk: Boolean = false,
-    val useBitsForSpeed: Boolean = false,
-) {
-    companion object {
-        val default: AppSettingsModel get() = AppSettingsModel()
-    }
-
-    object ConfigLens : Lens<MapConfig, AppSettingsModel>, KoinComponent {
-        object Keys {
-            val theme = stringKeyOf("theme")
-            val language = stringKeyOf("language")
-            val uiScale = floatKeyOf("uiScale")
-            val mergeTopBarWithTitleBar = booleanKeyOf("mergeTopBarWithTitleBar")
-            val threadCount = intKeyOf("threadCount")
-            val dynamicPartCreation = booleanKeyOf("dynamicPartCreation")
-            val useServerLastModifiedTime = booleanKeyOf("useServerLastModifiedTime")
-            val useSparseFileAllocation = booleanKeyOf("useSparseFileAllocation")
-            val useAverageSpeed = booleanKeyOf("useAverageSpeed")
-            val showDownloadProgressDialog = booleanKeyOf("showDownloadProgressDialog")
-            val showDownloadCompletionDialog = booleanKeyOf("showDownloadCompletionDialog")
-            val speedLimit = longKeyOf("speedLimit")
-            val autoStartOnBoot = booleanKeyOf("autoStartOnBoot")
-            val notificationSound = booleanKeyOf("notificationSound")
-            val defaultDownloadFolder = stringKeyOf("defaultDownloadFolder")
-            val browserIntegrationEnabled = booleanKeyOf("browserIntegrationEnabled")
-            val browserIntegrationPort = intKeyOf("browserIntegrationPort")
-            val trackDeletedFilesOnDisk = booleanKeyOf("trackDeletedFilesOnDisk")
-            val useBitsForSpeed = booleanKeyOf("useBitsForSpeed")
-        }
-
-
-        override fun get(source: MapConfig): AppSettingsModel {
-            val default by lazy { AppSettingsModel.default }
-            return AppSettingsModel(
-                theme = source.get(Keys.theme) ?: default.theme,
-                language = source.get(Keys.language) ?: default.language,
-                uiScale = source.get(Keys.uiScale) ?: default.uiScale,
-                mergeTopBarWithTitleBar = source.get(Keys.mergeTopBarWithTitleBar) ?: default.mergeTopBarWithTitleBar,
-                threadCount = source.get(Keys.threadCount) ?: default.threadCount,
-                dynamicPartCreation = source.get(Keys.dynamicPartCreation) ?: default.dynamicPartCreation,
-                useServerLastModifiedTime = source.get(Keys.useServerLastModifiedTime)
-                    ?: default.useServerLastModifiedTime,
-                useSparseFileAllocation = source.get(Keys.useSparseFileAllocation) ?: default.useSparseFileAllocation,
-                useAverageSpeed = source.get(Keys.useAverageSpeed) ?: default.useAverageSpeed,
-                showDownloadProgressDialog = source.get(Keys.showDownloadProgressDialog)
-                    ?: default.showDownloadProgressDialog,
-                showDownloadCompletionDialog = source.get(Keys.showDownloadCompletionDialog)
-                    ?: default.showDownloadCompletionDialog,
-                speedLimit = source.get(Keys.speedLimit) ?: default.speedLimit,
-                autoStartOnBoot = source.get(Keys.autoStartOnBoot) ?: default.autoStartOnBoot,
-                notificationSound = source.get(Keys.notificationSound) ?: default.notificationSound,
-                defaultDownloadFolder = source.get(Keys.defaultDownloadFolder) ?: default.defaultDownloadFolder,
-                browserIntegrationEnabled = source.get(Keys.browserIntegrationEnabled)
-                    ?: default.browserIntegrationEnabled,
-                browserIntegrationPort = source.get(Keys.browserIntegrationPort) ?: default.browserIntegrationPort,
-                trackDeletedFilesOnDisk = source.get(Keys.trackDeletedFilesOnDisk) ?: default.trackDeletedFilesOnDisk,
-                useBitsForSpeed = source.get(Keys.useBitsForSpeed) ?: default.useBitsForSpeed,
-            )
-        }
-
-        override fun set(source: MapConfig, focus: AppSettingsModel): MapConfig {
-            return source.apply {
-                put(Keys.theme, focus.theme)
-                putNullable(Keys.language, focus.language)
-                putNullable(Keys.uiScale, focus.uiScale)
-                put(Keys.mergeTopBarWithTitleBar, focus.mergeTopBarWithTitleBar)
-                put(Keys.threadCount, focus.threadCount)
-                put(Keys.dynamicPartCreation, focus.dynamicPartCreation)
-                put(Keys.useServerLastModifiedTime, focus.useServerLastModifiedTime)
-                put(Keys.useSparseFileAllocation, focus.useSparseFileAllocation)
-                put(Keys.useAverageSpeed, focus.useAverageSpeed)
-                put(Keys.showDownloadProgressDialog, focus.showDownloadProgressDialog)
-                put(Keys.showDownloadCompletionDialog, focus.showDownloadCompletionDialog)
-                put(Keys.speedLimit, focus.speedLimit)
-                put(Keys.autoStartOnBoot, focus.autoStartOnBoot)
-                put(Keys.notificationSound, focus.notificationSound)
-                put(Keys.defaultDownloadFolder, focus.defaultDownloadFolder)
-                put(Keys.browserIntegrationEnabled, focus.browserIntegrationEnabled)
-                put(Keys.browserIntegrationPort, focus.browserIntegrationPort)
-                put(Keys.trackDeletedFilesOnDisk, focus.trackDeletedFilesOnDisk)
-                put(Keys.useBitsForSpeed, focus.useBitsForSpeed)
-            }
-        }
-    }
-}
-
-private val uiScaleLens: Lens<AppSettingsModel, Float?>
+private val fontLens: Lens<AppSettingsModel, String?>
     get() = Lens(
         get = {
-            it.uiScale
+            it.font
         },
         set = { s, f ->
-            s.copy(uiScale = f)
+            s.copy(font = f)
         }
     )
-private val languageLens: Lens<AppSettingsModel, String?>
+// use null for default scale!
+private val uiScaleLens: Lens<PlatformAppSettingsModel, Float>
+    get() = Lens(
+        get = {
+            it.uiScale ?: DEFAULT_UI_SCALE
+        },
+        set = { s, f ->
+            s.copy(uiScale = f.takeIf { it != DEFAULT_UI_SCALE })
+        }
+    )
+private val languageLens: Lens<PlatformAppSettingsModel, String?>
     get() = Lens(
         get = {
             it.language
@@ -138,27 +41,51 @@ private val languageLens: Lens<AppSettingsModel, String?>
     )
 
 class AppSettingsStorage(
-    settings: DataStore<MapConfig>,
-) :
-    ConfigBaseSettingsByMapConfig<AppSettingsModel>(settings, AppSettingsModel.ConfigLens),
-    LanguageStorage {
-    var theme = from(AppSettingsModel.theme)
+    settings: DataStore<AppSettingsModel>,
+) : BaseAppSettingsStorage,
+    ConfigBaseSettingsByJson<AppSettingsModel>(settings) {
+    override val theme = from(AppSettingsModel.theme)
+    override val defaultDarkTheme = from(AppSettingsModel.defaultDarkTheme)
+    override val defaultLightTheme = from(AppSettingsModel.defaultLightTheme)
+
     override val selectedLanguage = from(languageLens)
-    var uiScale = from(uiScaleLens)
-    var mergeTopBarWithTitleBar = from(AppSettingsModel.mergeTopBarWithTitleBar)
-    val threadCount = from(AppSettingsModel.threadCount)
-    val dynamicPartCreation = from(AppSettingsModel.dynamicPartCreation)
-    val useServerLastModifiedTime = from(AppSettingsModel.useServerLastModifiedTime)
-    val useSparseFileAllocation = from(AppSettingsModel.useSparseFileAllocation)
-    val useAverageSpeed = from(AppSettingsModel.useAverageSpeed)
-    val showDownloadProgressDialog = from(AppSettingsModel.showDownloadProgressDialog)
-    val showDownloadCompletionDialog = from(AppSettingsModel.showDownloadCompletionDialog)
-    val speedLimit = from(AppSettingsModel.speedLimit)
-    val autoStartOnBoot = from(AppSettingsModel.autoStartOnBoot)
-    val notificationSound = from(AppSettingsModel.notificationSound)
-    val defaultDownloadFolder = from(AppSettingsModel.defaultDownloadFolder)
-    val browserIntegrationEnabled = from(AppSettingsModel.browserIntegrationEnabled)
-    val browserIntegrationPort = from(AppSettingsModel.browserIntegrationPort)
-    val trackDeletedFilesOnDisk = from(AppSettingsModel.trackDeletedFilesOnDisk)
-    val useBitsForSpeed = from(AppSettingsModel.useBitsForSpeed)
+    override val font = from(fontLens)
+    override val uiScale = from(uiScaleLens)
+    val mergeTopBarWithTitleBar = from(AppSettingsModel.mergeTopBarWithTitleBar)
+    val useNativeMenuBar = from(AppSettingsModel.useNativeMenuBar)
+    override val showIconLabels = from(AppSettingsModel.showIconLabels)
+    override val useRelativeDateTime = from(AppSettingsModel.useRelativeDateTime)
+    val useSystemTray = from(AppSettingsModel.useSystemTray)
+    override val threadCount = from(AppSettingsModel.threadCount)
+    override val maxConcurrentDownloads = from(AppSettingsModel.maxConcurrentDownloads)
+    override val dynamicPartCreation = from(AppSettingsModel.dynamicPartCreation)
+    override val useServerLastModifiedTime = from(AppSettingsModel.useServerLastModifiedTime)
+    override val appendExtensionToIncompleteDownloads = from(AppSettingsModel.appendExtensionToIncompleteDownloads)
+    override val useSparseFileAllocation = from(AppSettingsModel.useSparseFileAllocation)
+    override val useAverageSpeed = from(AppSettingsModel.useAverageSpeed)
+    override val maxDownloadRetryCount = from(AppSettingsModel.maxDownloadRetryCount)
+    override val showDownloadProgressDialog = from(AppSettingsModel.showDownloadProgressDialog)
+    override val showDownloadCompletionDialog = from(AppSettingsModel.showDownloadCompletionDialog)
+    override val useSpeedLimit: MutableStateFlow<SpeedLimitMode> = from(AppSettingsModel.useSpeedLimit)
+    override val speedLimit = from(AppSettingsModel.speedLimit)
+    override val minPartSize = from(AppSettingsModel.minPartSize)
+    override val autoStartOnBoot = from(AppSettingsModel.autoStartOnBoot)
+    override val notificationSound = from(AppSettingsModel.notificationSound)
+    override val generalNotificationSound = from(AppSettingsModel.generalNotificationSound)
+    override val errorNotificationSound = from(AppSettingsModel.errorNotificationSound)
+    override val successNotificationSound = from(AppSettingsModel.successNotificationSound)
+    override val defaultDownloadFolder = from(AppSettingsModel.defaultDownloadFolder)
+    override val apiEnabled = from(AppSettingsModel.apiEnabled)
+    override val apiPort = from(AppSettingsModel.apiPort)
+    override val apiAuthEnabled = from(AppSettingsModel.apiAuthEnabled)
+    override val apiAuthKey = from(AppSettingsModel.apiAuthKey)
+    override val trackDeletedFilesOnDisk = from(AppSettingsModel.trackDeletedFilesOnDisk)
+    override val deletePartialFileOnDownloadCancellation =
+        from(AppSettingsModel.deletePartialFileOnDownloadCancellation)
+    override val sizeUnit = from(AppSettingsModel.sizeUnit)
+    override val speedUnit = from(AppSettingsModel.speedUnit)
+    override val ignoreSSLCertificates = from(AppSettingsModel.ignoreSSLCertificates)
+    override val useCategoryByDefault = from(AppSettingsModel.useCategoryByDefault)
+    override val userAgent = from(AppSettingsModel.userAgent)
+    override val blockAddWhenLoading = from(AppSettingsModel.blockAddWhenLoading)
 }

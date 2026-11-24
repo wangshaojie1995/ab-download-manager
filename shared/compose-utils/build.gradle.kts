@@ -1,12 +1,24 @@
+
+
 plugins {
-    id(MyPlugins.kotlin)
+    id(MyPlugins.kotlinMultiplatform)
     id(MyPlugins.composeBase)
+    id(Plugins.Android.multiplatformLibrary)
 }
-dependencies {
-    implementation(compose.runtime)
-    implementation(compose.foundation)
-    implementation(compose.ui)
-    implementation(compose.components.resources)
-    implementation(project(":shared:utils"))
-    api(project(":shared:resources:contracts"))
+kotlin {
+    jvm("desktop")
+    android {
+        compileSdk = libs.versions.androidCompileSdk.get().toInt()
+        namespace = "ir.amirab.util.compose"
+        minSdk = 26
+    }
+    sourceSets {
+        commonMain.dependencies {
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.ui)
+            implementation(project(":shared:utils"))
+            api(project(":shared:resources:contracts"))
+        }
+    }
 }

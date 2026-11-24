@@ -4,20 +4,21 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.window.FrameWindowScope
 import java.awt.ComponentOrientation
 import java.awt.GraphicsConfiguration
 import java.awt.GraphicsEnvironment
-import java.awt.Window
 import java.util.*
 
-val LocalWindow = compositionLocalOf<Window> {
-    error("LocalWindow not provided yet")
+val LocalFrameWindowScope = compositionLocalOf<FrameWindowScope> {
+    error("LocalFrameWindowScope not provided yet")
 }
 
-val GlobalDensity get() = GraphicsEnvironment.getLocalGraphicsEnvironment()
-    .defaultScreenDevice
-    .defaultConfiguration
-    .density
+val GlobalDensity
+    get() = GraphicsEnvironment.getLocalGraphicsEnvironment()
+        .defaultScreenDevice
+        .defaultConfiguration
+        .density
 val GraphicsConfiguration.density: Density
     get() = Density(
         defaultTransform.scaleX.toFloat(),
@@ -45,6 +46,7 @@ val trayIconSize = when (DesktopPlatform.Current) {
     DesktopPlatform.MacOS -> Size(22f, 22f)
     DesktopPlatform.Unknown -> Size(32f, 32f)
 }
+
 enum class DesktopPlatform {
     Linux,
     Windows,

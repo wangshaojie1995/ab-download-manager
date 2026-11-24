@@ -50,7 +50,7 @@ detect_package_manager() {
     elif [ -f /etc/debian_version ]; then
         local OS=Debian
     else
-        logger error "Your Linux Distro is not Supperted."
+        logger error "Your Linux Distro is not Supported."
         logger error "Please install ${DEPENDENCIES[@]} Manually."
         exit 1
     fi
@@ -99,9 +99,24 @@ check_dependencies() {
     done
 }
 
+get_arch() {
+  case "$(uname -m)" in
+    x86_64 | amd64)
+      echo "x64"
+      ;;
+    aarch64 | arm64)
+      echo "arm64"
+      ;;
+    *)
+      logger error "Unsupported architecture: $(uname -m)"
+      return 1
+      ;;
+  esac
+}
+
 APP_NAME="ABDownloadManager"
 PLATFORM="linux"
-ARCH="x64"
+ARCH="$(get_arch)" || exit 1
 EXT="tar.gz"
 
 RELEASE_URL="https://api.github.com/repos/amir1376/ab-download-manager/releases/latest"
@@ -112,7 +127,9 @@ LATEST_VERSION=$(curl -fSs "${RELEASE_URL}" | grep '"tag_name":' | sed -E 's/.*"
 ASSET_NAME="${APP_NAME}_${LATEST_VERSION:1}_${PLATFORM}_${ARCH}.${EXT}"
 DOWNLOAD_URL="$GITHUB_RELEASE_DOWNLOAD/${LATEST_VERSION}/$ASSET_NAME"
 
-BINARY_PATH="$HOME/.local/$APP_NAME/bin/$APP_NAME"
+APP_PATH="$HOME/.local/$APP_NAME"
+BINARY_PATH="$APP_PATH/bin/$APP_NAME"
+ICON_PATH="$APP_PATH/lib/$APP_NAME.png"
 
 
 # --- Delete the old version Application if exists
@@ -154,14 +171,14 @@ delete_old_version() {
 
 # --- Generate a .desktop file for the app
 generate_desktop_file() {
-    cat <<EOF > "$HOME/.local/share/applications/abdownloadmanager.desktop"
+    cat <<EOF > "$HOME/.local/share/applications/com.abdownloadmanager.desktop"
 [Desktop Entry]
 Name=AB Download Manager
 Comment=Manage and organize your download files better than before
 GenericName=Downloader
 Categories=Utility;Network;
-Exec=$BINARY_PATH
-Icon=$HOME/.local/$APP_NAME/lib/$APP_NAME.png
+Exec="$BINARY_PATH"
+Icon=$ICON_PATH
 Terminal=false
 Type=Application
 StartupWMClass=com-abdownloadmanager-desktop-AppKt

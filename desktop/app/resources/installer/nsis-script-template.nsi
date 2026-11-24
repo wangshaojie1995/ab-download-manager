@@ -8,6 +8,7 @@ SetCompressor /SOLID lzma
 !define APP_PUBLISHER "{{ app_publisher }}"
 !define APP_NAME "{{ app_name }}"
 !define APP_DISPLAY_NAME "{{ app_display_name }}"
+!define APP_DATA_DIR_NAME "{{ app_data_dir_name }}"
 !define APP_VERSION "{{ app_version }}"
 !define APP_VERSION_WITH_BUILD "{{ app_version_with_build }}"
 !define APP_DISPLAY_VERSION "{{ app_display_version }}"
@@ -18,6 +19,8 @@ SetCompressor /SOLID lzma
 !define INPUT_DIR "{{ input_dir }}"
 !define LICENSE_FILE "{{ license_file }}"
 !define MAIN_BINARY_NAME "${APP_NAME}"
+!define NATIVE_MESSAGING_HOST_BINARY_NAME "{{ native_messaging_host_binary_name }}"
+!define CLI_BINARY_NAME "{{ cli_binary_name }}"
 
 !define SIDEBAR_IMAGE "{{ sidebar_image_file }}"
 !define HEADER_IMAGE "{{ header_image_file }}"
@@ -87,6 +90,7 @@ FunctionEnd
 
 ;Uninstallation Pages
 !insertmacro MUI_UNPAGE_WELCOME
+!insertmacro MUI_UNPAGE_COMPONENTS
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_UNPAGE_FINISH
@@ -100,6 +104,8 @@ FunctionEnd
     RmDir /r "${INSTALL_DIR}\runtime"
     Delete "${INSTALL_DIR}\${MAIN_BINARY_NAME}.exe"
     Delete "${INSTALL_DIR}\${MAIN_BINARY_NAME}.ico"
+    Delete "${INSTALL_DIR}\${CLI_BINARY_NAME}.exe"
+    Delete "${INSTALL_DIR}\${NATIVE_MESSAGING_HOST_BINARY_NAME}.exe"
     Delete "${INSTALL_DIR}\uninstall.exe"
     RmDir "${INSTALL_DIR}"
 !macroend
@@ -108,8 +114,17 @@ Function RunMainBinary
    Exec "${INSTALL_DIR}\${MAIN_BINARY_NAME}.exe"
 FunctionEnd
 
-!macro GetBestExecutableName result
-    StrCpy ${result} "${MAIN_BINARY_NAME}.exe"
+!macro closeProcess executableName
+    DetailPrint "Stopping Executable ${executableName}"
+
+    ${If} "$EXEFILE" != "${executableName}"
+        nsExec::ExecToLog 'taskkill /F /IM "${executableName}"'
+        Pop $0
+    ${Else}
+        DetailPrint "It seems that installer file name is same as executable name"
+        DetailPrint "Please close app manually"
+        StrCpy $0 "1"
+    ${Endif}
 !macroend
 
 ; Function RestorePreviousInstallLocation
@@ -121,17 +136,10 @@ FunctionEnd
 
 ; I should improve this.
 !macro closeApp
-    !insertmacro GetBestExecutableName $1
-    DetailPrint "Stopping Executable $1"
-    ; I don't wanna kill myself!
-    ${If} "$EXEFILE" != "$1"
-        ExecWait 'taskkill /F /IM "$1"' $0
-    ${Else}
-        DetailPrint "It seems that installer file name is same as app executable name"
-        DetailPrint "Please close app manually"
-        ; don't sleep the script for nothing.
-        StrCpy $0 "1"
-    ${EndIf}
+    !insertmacro closeProcess "${NATIVE_MESSAGING_HOST_BINARY_NAME}.exe"
+    !insertmacro closeProcess "${CLI_BINARY_NAME}.exe"
+    !insertmacro closeProcess "${MAIN_BINARY_NAME}.exe"
+
     ${If} $0 == "0"
         Sleep 500
         BringToFront ; when we sleep it seems that window goes down
@@ -141,15 +149,20 @@ FunctionEnd
 
 !macro CreateStartMenu
 	createDirectory "$SMPROGRAMS\${APP_DISPLAY_NAME}"
-	createShortCut "$SMPROGRAMS\${APP_DISPLAY_NAME}\${APP_DISPLAY_NAME}.lnk" "${INSTALL_DIR}\${MAIN_BINARY_NAME}.exe" "" "${INSTALL_DIR}\${MAIN_BINARY_NAME}.ico"
+	createShortCut "$SMPROGRAMS\${APP_DISPLAY_NAME}\${APP_DISPLAY_NAME}.lnk" "${INSTALL_DIR}\${MAIN_BINARY_NAME}.exe"
 !macroend
 
 !macro RemoveStartMenu
 	RmDir /r "$SMPROGRAMS\${APP_DISPLAY_NAME}"
 !macroend
 
+!macro RemoveUserData
+	RMDir /r "$PROFILE\${APP_DATA_DIR_NAME}"
+	RmDir /r "${INSTALL_DIR}\${APP_DATA_DIR_NAME}"
+!macroend
+
 !macro CreateDesktopShortcut
-    CreateShortcut "$DESKTOP\${APP_DISPLAY_NAME}.lnk" "${INSTALL_DIR}\${MAIN_BINARY_NAME}.exe" "" "${INSTALL_DIR}\${MAIN_BINARY_NAME}.ico"
+    CreateShortcut "$DESKTOP\${APP_DISPLAY_NAME}.lnk" "${INSTALL_DIR}\${MAIN_BINARY_NAME}.exe"
 !macroend
 
 !macro RemoveDesktopShortCut
@@ -203,7 +216,13 @@ Section "Desktop Shortcut"
     !insertmacro CreateDesktopShortcut
 SectionEnd
 
+Section /o "un.Remove User Data"
+    !insertmacro RemoveUserData
+SectionEnd
+
 Section "Uninstall"
+    SectionInstType RO
+
     !insertmacro closeApp
     !insertmacro clearFiles
 
